@@ -3,6 +3,7 @@ import * as fetcherService from './fetchers/fetcher.service.js';
 import { IFetchResult } from '../models/fetchResult.model.js';
 import { FetchStatus } from '../types/fetchStatus.js';
 import { FetchType } from '../types/fetchType.js';
+import { ComputationError } from '../utils/customErrors.js';
 
 export const generateFetchResult = async (
     isAsync: boolean,
@@ -20,12 +21,15 @@ export const generateFetchResult = async (
                 auditConfig,
             );
             const fetchEndDate = new Date();
-            await fetchResultRepository.updateFetchResultById(initialFetchResult._id.toString(), {
-                status: FetchStatus.COMPLETED,
-                fetchEndDate: fetchEndDate,
-                fetchDate: fetchEndDate,
-                data: fetchResult.data,
-            });
+            return await fetchResultRepository.updateFetchResultById(
+                initialFetchResult._id.toString(),
+                {
+                    status: FetchStatus.COMPLETED,
+                    fetchEndDate: fetchEndDate,
+                    fetchDate: fetchEndDate,
+                    data: fetchResult.data,
+                },
+            );
         } catch (error) {
             const fetchEndDate = new Date();
             await fetchResultRepository.updateFetchResultById(initialFetchResult._id.toString(), {
@@ -33,6 +37,7 @@ export const generateFetchResult = async (
                 fetchEndDate: fetchEndDate,
                 fetchDate: fetchEndDate,
             });
+            throw new ComputationError('Failed to generate fetch result');
         }
     };
     if (isAsync) {
@@ -55,4 +60,32 @@ const createInitialFetchResult = async (data: Partial<IFetchResult>) => {
         fetcherConfig: data.fetcherConfig,
         data: null,
     });
+};
+
+export const getFetchResults = async () => {
+    return await fetchResultRepository.getFetchResults();
+};
+
+export const getFetchResultById = async (id: string) => {
+    return await fetchResultRepository.getFetchResultById(id);
+};
+
+export const updateFetchResultById = async (id: string, updateData: Partial<IFetchResult>) => {
+    return await fetchResultRepository.updateFetchResultById(id, updateData);
+};
+
+export const deleteFetchResultById = async (id: string) => {
+    return await fetchResultRepository.deleteFetchResultById(id);
+};
+
+export const deleteFetchResults = async () => {
+    return await fetchResultRepository.deleteFetchResults();
+};
+
+export const getFetchResultsByFetcherName = async (fetcherName: string) => {
+    return await fetchResultRepository.getFetchResultsByFetcherName(fetcherName);
+};
+
+export const deleteFetchResultsByFetcherName = async (fetcherName: string) => {
+    return await fetchResultRepository.deleteFetchResultsByFetcherName(fetcherName);
 };

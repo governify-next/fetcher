@@ -21,7 +21,7 @@ export const deleteFetchResultById = async (id: string) => {
     return await FetchResult.findByIdAndDelete(id);
 };
 
-export const deleteAllFetchResults = async () => {
+export const deleteFetchResults = async () => {
     return await FetchResult.deleteMany({});
 };
 

@@ -80,3 +80,14 @@ export class ForbiddenError extends StdError {
         });
     }
 }
+
+export class ComputationError extends StdError {
+    constructor(message: string = 'Computation error', details?: unknown) {
+        super({
+            message,
+            httpStatus: 422,
+            appCode: 'COMPUTATION_ERROR',
+            details,
+        });
+    }
+}

@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import { fetcherRoutes } from './routes/fetcher.routes.js';
+import { fetchResultRoutes } from './routes/fetchResult.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import swaggerUi from 'swagger-ui-express';
@@ -19,6 +20,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(healthRoutes);
 app.use('/api/v1', fetcherRoutes);
+app.use('/api/v1', fetchResultRoutes);
 app.use(errorHandler);
 
 export default app;
