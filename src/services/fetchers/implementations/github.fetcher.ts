@@ -1,0 +1,20 @@
+import { IFetcher } from '../../../types/fetcher.js';
+import { z } from 'zod';
+
+export const FT_xx_REST_GITHUB_xx_COMMITS: IFetcher = {
+    name: 'FT_xx_REST_GITHUB_xx_COMMITS',
+    moreInfo: {
+        title: 'GitHub Fetcher',
+        description:
+            'Fetches data from GitHub repositories, including commits, issues, and pull requests.',
+        example: '',
+    },
+    fetcherConfigSchema: z.object({}),
+    auditConfigSchema: z.object({
+        owner: z.string(),
+        repository: z.string(),
+    }),
+    fetch: async (_fetcherConfig, _auditConfig) => {
+        return { data: 'This is a placeholder for GitHub fetcher data' };
+    },
+};
