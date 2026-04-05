@@ -8,10 +8,9 @@ servers:
     - url: /
 
 tags:
-    - name: Health
-      description: Server health check
-    - name: Fetchers
-      description: Fetcher management and execution
+    - { name: Health, description: Server health check }
+    - { name: Fetchers, description: Fetcher management and execution }
+    - { name: Fetch Results, description: Fetch result generation and management }
 
 paths:
     # ──────────────────────────────────────────────
@@ -148,6 +147,208 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
 
+    # ──────────────────────────────────────────────
+    # Fetch Results
+    # ──────────────────────────────────────────────
+    /api/v1/fetchResults:
+        get:
+            tags:
+                - Fetch Results
+            summary: Get all fetch results
+            operationId: getFetchResults
+            description: Retrieves all persisted fetch results.
+            responses:
+                '200':
+                    description: Fetch results retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              type: array
+                                              items:
+                                                  $ref: '#/components/schemas/FetchResult'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        delete:
+            tags:
+                - Fetch Results
+            summary: Delete all fetch results
+            operationId: deleteAllFetchResults
+            description: Deletes all persisted fetch results.
+            responses:
+                '200':
+                    description: All fetch results deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/DeleteManyResult'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchResults/{id}:
+        parameters:
+            - $ref: '#/components/parameters/fetchResultId'
+        get:
+            tags:
+                - Fetch Results
+            summary: Get fetch result by id
+            operationId: getFetchResultById
+            description: Retrieves a single fetch result by its identifier.
+            responses:
+                '200':
+                    description: Fetch result retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        put:
+            tags:
+                - Fetch Results
+            summary: Update fetch result by id
+            operationId: updateFetchResultById
+            description: Updates a fetch result by its identifier.
+            requestBody:
+                $ref: '#/components/requestBodies/UpdateFetchResultBody'
+            responses:
+                '200':
+                    description: Fetch result updated successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        delete:
+            tags:
+                - Fetch Results
+            summary: Delete fetch result by id
+            operationId: deleteFetchResultById
+            description: Deletes a fetch result by its identifier.
+            responses:
+                '200':
+                    description: Fetch result deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchResults/fetchers/{fetcherName}:
+        parameters:
+            - $ref: '#/components/parameters/fetcherName'
+        get:
+            tags:
+                - Fetch Results
+            summary: Get fetch results by fetcher name
+            operationId: getFetchResultsByFetcherName
+            description: Retrieves all fetch results associated with a given fetcher.
+            responses:
+                '200':
+                    description: Fetch results retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              type: array
+                                              items:
+                                                  $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        delete:
+            tags:
+                - Fetch Results
+            summary: Delete fetch results by fetcher name
+            operationId: deleteFetchResultsByFetcherName
+            description: Deletes all fetch results associated with a given fetcher.
+            responses:
+                '200':
+                    description: Fetch results deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/DeleteManyResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchResults/fetchers/{fetcherName}/generate:
+        parameters:
+            - $ref: '#/components/parameters/fetcherName'
+            - $ref: '#/components/parameters/isAsync'
+        post:
+            tags:
+                - Fetch Results
+            summary: Generate a fetch result
+            operationId: generateFetchResult
+            description: Creates a fetch result and optionally executes fetch generation asynchronously.
+            requestBody:
+                $ref: '#/components/requestBodies/GenerateFetchResultBody'
+            responses:
+                '200':
+                    description: Fetch result created successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '422':
+                    $ref: '#/components/responses/ComputationError'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
 components:
     # ── Parameters ────────────────────────────
     parameters:
@@ -159,6 +360,23 @@ components:
             schema:
                 type: string
                 example: FT_xx_REST_GITHUB_xx_COMMITS
+        fetchResultId:
+            name: id
+            in: path
+            required: true
+            description: Fetch result identifier
+            schema:
+                type: string
+                example: 67c9ff7b2ddf1b3940f9f321
+        isAsync:
+            name: isAsync
+            in: query
+            required: false
+            description: If true, creates the fetch result and executes processing in background.
+            schema:
+                type: boolean
+                default: false
+                example: false
 
     # ── Request Bodies ────────────────────────
     requestBodies:
@@ -198,6 +416,39 @@ components:
                         auditConfig:
                             owner: governify
                             repository: collector
+
+        GenerateFetchResultBody:
+            description: Request body for generating a fetch result
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            fetcherConfig:
+                                $ref: '#/components/schemas/FetcherConfig'
+                            auditConfig:
+                                $ref: '#/components/schemas/AuditConfig'
+                        required:
+                            - fetcherConfig
+                            - auditConfig
+                    example:
+                        fetcherConfig: {}
+                        auditConfig:
+                            owner: governify
+                            repository: collector
+
+        UpdateFetchResultBody:
+            description: Request body for updating a fetch result
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/UpdateFetchResultRequest'
+                    example:
+                        status: COMPLETED
+                        fetchType: SCREENSHOT
+                        fetchDate: '2026-04-06T11:00:00.000Z'
+                        fetchEndDate: '2026-04-06T11:00:00.000Z'
+                        data: This is a placeholder for GitHub fetcher data
 
     # ── Reusable responses ────────────────────────
     responses:
@@ -258,12 +509,28 @@ components:
                         $ref: '#/components/schemas/ErrorResponse'
                     example:
                         success: false
-                        message: Fetcher FT_xx_REST_GITHUB_xx_COMMITS_UNKNOWN not found
+                        message: Resource not found
                         httpStatus: 404
                         appCode: NOT_FOUND
                         data: null
                         error:
-                            message: Fetcher FT_xx_REST_GITHUB_xx_COMMITS_UNKNOWN not found
+                            message: Resource not found
+                            details: null
+
+        ComputationError:
+            description: Error while generating the fetch result data
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Failed to generate fetch result
+                        httpStatus: 422
+                        appCode: COMPUTATION_ERROR
+                        data: null
+                        error:
+                            message: Failed to generate fetch result
                             details: null
 
         InternalError:
@@ -482,3 +749,103 @@ components:
                         $ref: '#/components/schemas/ValidateFetcherIssue'
             required:
                 - valid
+
+        FetchResult:
+            type: object
+            description: Fetch result entity persisted in MongoDB
+            properties:
+                _id:
+                    type: string
+                    example: 67c9ff7b2ddf1b3940f9f321
+                fetcherName:
+                    type: string
+                    example: FT_xx_REST_GITHUB_xx_COMMITS
+                fetchStartDate:
+                    type: string
+                    format: date-time
+                    example: '2026-04-06T10:59:55.000Z'
+                fetchEndDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: '2026-04-06T11:00:00.000Z'
+                fetchDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: '2026-04-06T11:00:00.000Z'
+                fetchType:
+                    type: string
+                    enum: [SCREENSHOT, HISTORICAL]
+                    example: SCREENSHOT
+                status:
+                    type: string
+                    enum: [IN_PROGRESS, COMPLETED, FAILED]
+                    example: COMPLETED
+                auditConfig:
+                    $ref: '#/components/schemas/AuditConfig'
+                fetcherConfig:
+                    $ref: '#/components/schemas/FetcherConfig'
+                data:
+                    nullable: true
+                    oneOf:
+                        - type: string
+                        - type: object
+                        - type: array
+                    example: This is a placeholder for GitHub fetcher data
+                createdAt:
+                    type: string
+                    format: date-time
+                    example: '2026-04-06T10:59:55.000Z'
+                updatedAt:
+                    type: string
+                    format: date-time
+                    example: '2026-04-06T11:00:00.000Z'
+
+        UpdateFetchResultRequest:
+            type: object
+            description: Partial payload for updating a fetch result
+            properties:
+                fetcherName:
+                    type: string
+                fetchStartDate:
+                    type: string
+                    format: date-time
+                fetchEndDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                fetchDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                fetchType:
+                    type: string
+                    enum: [SCREENSHOT, HISTORICAL]
+                status:
+                    type: string
+                    enum: [IN_PROGRESS, COMPLETED, FAILED]
+                auditConfig:
+                    $ref: '#/components/schemas/AuditConfig'
+                fetcherConfig:
+                    $ref: '#/components/schemas/FetcherConfig'
+                data:
+                    nullable: true
+                    oneOf:
+                        - type: string
+                        - type: object
+                        - type: array
+
+        DeleteManyResult:
+            type: object
+            description: MongoDB delete many operation result
+            properties:
+                acknowledged:
+                    type: boolean
+                    example: true
+                deletedCount:
+                    type: integer
+                    example: 3
+            required:
+                - acknowledged
+                - deletedCount
