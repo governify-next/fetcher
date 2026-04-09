@@ -1,8 +1,10 @@
 import { IFetcher } from '../../../types/fetcher.js';
+import { FetchType } from '../../../types/fetchType.js';
 import { z } from 'zod';
 
 export const FT_xx_BLUEJAY_xx_REPORTER_LOGS: IFetcher = {
     name: 'FT_xx_BLUEJAY_xx_REPORTER_LOGS',
+    type: FetchType.SCREENSHOT,
     moreInfo: {
         title: 'Reporter Logs Fetcher',
         description: 'Fetches reporter logs from the Bluejay system.',

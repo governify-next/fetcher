@@ -1,13 +1,10 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
-import { FetchType } from '../types/fetchType.js';
+import mongoose, { Schema, Document } from 'mongoose';
 import { FetchStatus } from '../types/fetchStatus.js';
 
 export interface IFetchResult extends Document {
-    fetcherName: string;
     fetchStartDate: Date;
     fetchEndDate: Date | null;
-    fetchDate: Date | null;
-    fetchType: FetchType;
+    fetchDate: Date;
     status: FetchStatus;
     auditConfig: Record<string, unknown>;
     fetcherConfig: Record<string, unknown>;
@@ -16,11 +13,9 @@ export interface IFetchResult extends Document {
 
 const FetchResultSchema: Schema<IFetchResult> = new Schema(
     {
-        fetcherName: { type: String, required: true },
         fetchStartDate: { type: Date, required: true },
         fetchEndDate: { type: Date, default: null },
-        fetchDate: { type: Date, default: null },
-        fetchType: { type: String, enum: Object.values(FetchType), required: true },
+        fetchDate: { type: Date, required: true },
         status: { type: String, enum: Object.values(FetchStatus), required: true },
         auditConfig: { type: Schema.Types.Mixed, required: true },
         fetcherConfig: { type: Schema.Types.Mixed, required: true },
@@ -29,6 +24,31 @@ const FetchResultSchema: Schema<IFetchResult> = new Schema(
     { timestamps: true },
 );
 
-export const FetchResultModel = mongoose.model<IFetchResult>('FetchResult', FetchResultSchema);
+const FETCH_RESULT_COLLECTION_PREFIX = 'fetchresults';
+const FETCH_RESULT_MODEL_PREFIX = 'FetchResult';
 
-export default FetchResultModel;
+const sanitizeFetcherName = (fetcherName: string): string => {
+    return fetcherName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+};
+
+export const getFetcherResultsCollectionName = (fetcherName: string): string => {
+    const sanitizedFetcherName = sanitizeFetcherName(fetcherName);
+    return `${FETCH_RESULT_COLLECTION_PREFIX}_${sanitizedFetcherName}`;
+};
+
+export const getFetcherResultsModel = (fetcherName: string) => {
+    const modelName = `${FETCH_RESULT_MODEL_PREFIX}_${sanitizeFetcherName(fetcherName)}`;
+    const existingModel = mongoose.models[modelName] as mongoose.Model<IFetchResult> | undefined;
+    if (existingModel) {
+        return existingModel;
+    }
+    return mongoose.model<IFetchResult>(
+        modelName,
+        FetchResultSchema,
+        getFetcherResultsCollectionName(fetcherName),
+    );
+};

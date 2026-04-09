@@ -1,8 +1,10 @@
 import { IFetcher } from '../../../types/fetcher.js';
+import { FetchType } from '../../../types/fetchType.js';
 import { z } from 'zod';
 
 export const FT_xx_REST_GITHUB_xx_COMMITS: IFetcher = {
     name: 'FT_xx_REST_GITHUB_xx_COMMITS',
+    type: FetchType.SCREENSHOT,
     moreInfo: {
         title: 'GitHub Fetcher',
         description:

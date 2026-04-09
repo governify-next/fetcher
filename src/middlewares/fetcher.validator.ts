@@ -24,6 +24,12 @@ export const validateFetcherName = async (req: Request, res: Response, next: Nex
     }
 };
 
+const fetchDateRequiredValidation = body('fetchDate')
+    .exists({ checkNull: true })
+    .withMessage('fetchDate is required')
+    .isISO8601()
+    .withMessage('fetchDate must be a valid ISO 8601 date');
+
 const fetcherConfigOptionalValidation = body('fetcherConfig')
     .optional()
     .isObject()
@@ -47,6 +53,7 @@ const auditConfigRequiredValidation = body('auditConfig')
     .withMessage('auditConfig must be an object');
 
 export const validateFetcherValidation = [
+    fetchDateRequiredValidation,
     fetcherConfigOptionalValidation,
     auditConfigOptionalValidation,
     collectValidationErrors,

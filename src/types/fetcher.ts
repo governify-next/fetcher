@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { FetchType } from './fetchType.js';
 
 export interface IFetcher {
     name: string;
+    type: FetchType;
     moreInfo: {
         title: string;
         description: string;
