@@ -2,12 +2,12 @@ import { ZodError } from 'zod';
 import { IFetcher } from '../../types/fetcher.js';
 import { ValidationError } from '../../utils/customErrors.js';
 
-import { FT_REST_GITHUB_COMMITS } from './implementations/github.fetcher.js';
-import { FT_BLUEJAY_REPORTER_LOGS } from './implementations/bluejay.fetcher.js';
+import { FT_REST_GITHUB_COMMITS } from './implementations/rest/github.fetcher.js';
+import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/bluejay.fetcher.js';
 
 export const fetchers: Record<string, IFetcher> = {
     FT_REST_GITHUB_COMMITS,
-    FT_BLUEJAY_REPORTER_LOGS,
+    FT_REST_BLUEJAY_REPORTER_LOGS,
 };
 
 const injectFetchScriptStringToMetric = (
