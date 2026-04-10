@@ -318,7 +318,7 @@ components:
             description: Name of the fetcher
             schema:
                 type: string
-                example: FT_xx_REST_GITHUB_xx_COMMITS
+                example: FT_REST_GITHUB_COMMITS
         fetchResultId:
             name: id
             in: path
@@ -602,7 +602,7 @@ components:
             properties:
                 name:
                     type: string
-                    example: FT_xx_REST_GITHUB_xx_COMMITS
+                    example: FT_REST_GITHUB_COMMITS
                 moreInfo:
                     $ref: '#/components/schemas/FetcherMoreInfo'
                 fetcherConfigSchema:
@@ -741,7 +741,7 @@ components:
                     example: 67c9ff7b2ddf1b3940f9f321
                 fetcherName:
                     type: string
-                    example: FT_xx_REST_GITHUB_xx_COMMITS
+                    example: FT_REST_GITHUB_COMMITS
                 fetchStartDate:
                     type: string
                     format: date-time
