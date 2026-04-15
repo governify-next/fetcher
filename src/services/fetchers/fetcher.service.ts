@@ -4,10 +4,14 @@ import { ValidationError } from '../../utils/customErrors.js';
 
 import { FT_REST_GITHUB_COMMITS } from './implementations/rest/rest.github.fetcher.js';
 import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/rest.bluejay.fetcher.js';
+import { FT_GQL_GITHUB_PROJECTV2_ITEMS } from './implementations/gql/gql.github.projectv2Items.fetcher.js';
+import { FT_GQL_GITHUB_PULL_REQUESTS } from './implementations/gql/gql.github.pullRequests.fetcher.js';
 
 export const fetchers: Record<string, IFetcher> = {
     FT_REST_GITHUB_COMMITS,
     FT_REST_BLUEJAY_REPORTER_LOGS,
+    FT_GQL_GITHUB_PROJECTV2_ITEMS,
+    FT_GQL_GITHUB_PULL_REQUESTS,
 };
 
 const injectFetchScriptStringToMetric = (

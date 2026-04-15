@@ -16,7 +16,7 @@ export const FT_REST_GITHUB_COMMITS: IFetcher = {
         owner: z.string(),
         repository: z.string(),
     }),
-    fetch: async (_fetcherConfig, _auditConfig) => {
+    fetch: async (_fetchConfig, _auditConfig) => {
         return { data: 'This is a placeholder for GitHub fetcher data' };
     },
 };

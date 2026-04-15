@@ -12,7 +12,7 @@ export const FT_REST_BLUEJAY_REPORTER_LOGS: IFetcher = {
     },
     fetcherConfigSchema: z.object({}),
     auditConfigSchema: z.object({}),
-    fetch: async (_fetcherConfig, _auditConfig) => {
+    fetch: async (_fetchConfig, _auditConfig) => {
         const response = await fetch('https://reporter.bluejay.governify.io/telemetry/logs');
         const data = await response.json();
         return { data };
