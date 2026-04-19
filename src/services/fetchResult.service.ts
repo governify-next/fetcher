@@ -2,7 +2,7 @@ import * as fetchResultRepository from '../repositories/fetchResult.repository.j
 import * as fetcherService from './fetchers/fetcher.service.js';
 import { IFetchResult } from '../models/fetchResult.model.js';
 import { FetchStatus } from '../types/fetchStatus.js';
-import { ComputationError, DuplicateKeyError, ValidationError } from '../utils/customErrors.js';
+import { ComputationError } from '../utils/customErrors.js';
 
 export const generateFetchResult = async (
     isAsync: boolean,
