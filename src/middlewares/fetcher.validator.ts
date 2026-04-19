@@ -24,11 +24,11 @@ export const validateFetcherName = async (req: Request, res: Response, next: Nex
     }
 };
 
-const fetchDateRequiredValidation = body('fetchDate')
+const dateRequiredValidation = body('date')
     .exists({ checkNull: true })
-    .withMessage('fetchDate is required')
+    .withMessage('date is required')
     .isISO8601()
-    .withMessage('fetchDate must be a valid ISO 8601 date');
+    .withMessage('date must be a valid ISO 8601 date');
 
 const fetcherConfigOptionalValidation = body('fetcherConfig')
     .optional()
@@ -41,26 +41,10 @@ const fetcherConfigRequiredValidation = body('fetcherConfig')
     .isObject()
     .withMessage('fetcherConfig must be an object');
 
-const auditConfigOptionalValidation = body('auditConfig')
-    .optional()
-    .isObject()
-    .withMessage('auditConfig must be an object');
-
-const auditConfigRequiredValidation = body('auditConfig')
-    .exists({ checkNull: true })
-    .withMessage('auditConfig is required')
-    .isObject()
-    .withMessage('auditConfig must be an object');
-
-export const validateFetcherValidation = [
-    fetchDateRequiredValidation,
-    fetcherConfigOptionalValidation,
-    auditConfigOptionalValidation,
-    collectValidationErrors,
-];
+export const validateFetcherValidation = [fetcherConfigOptionalValidation, collectValidationErrors];
 
 export const validateFetcherFetchValidation = [
+    dateRequiredValidation,
     fetcherConfigRequiredValidation,
-    auditConfigRequiredValidation,
     collectValidationErrors,
 ];

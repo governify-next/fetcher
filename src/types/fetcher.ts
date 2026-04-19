@@ -10,10 +10,6 @@ export interface IFetcher {
         example: string;
     };
     fetcherConfigSchema: z.ZodTypeAny;
-    auditConfigSchema: z.ZodTypeAny;
-    fetch: (
-        fetcherConfig: Record<string, unknown>,
-        auditConfig: Record<string, unknown>,
-    ) => Promise<{ data: unknown }>;
+    fetch: (fetcherConfig: Record<string, unknown>) => Promise<{ data: unknown }>;
     fetchScript?: string;
 }

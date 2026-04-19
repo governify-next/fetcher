@@ -26,17 +26,16 @@ export const validateExistingFetchResultBeforeGeneration = async (
 ) => {
     try {
         const { fetcherName } = req.params;
-        const { fetchDate, auditConfig, fetcherConfig } = req.body;
+        const { date, fetcherConfig } = req.body;
         const existingFetchResult = await fetchResultService.getFetchResultsByFetchResultBody(
             fetcherName,
-            new Date(fetchDate),
-            auditConfig,
+            new Date(date),
             fetcherConfig,
         );
         if (existingFetchResult.length > 0) {
             return next(
                 new DuplicateKeyError(
-                    `A fetch result already exists for fetcher '${fetcherName}' with the id '${existingFetchResult[0]._id}' and current status '${existingFetchResult[0].status}' for the provided fetch date, audit configuration, and fetcher configuration`,
+                    `A fetch result already exists for fetcher '${fetcherName}' with the id '${existingFetchResult[0]._id}' and current status '${existingFetchResult[0].status}' for the provided fetch date and fetcher configuration`,
                 ),
             );
         }

@@ -86,14 +86,13 @@ export const FT_GQL_GITHUB_PULL_REQUESTS: IFetcher = {
             'Fetches every raw pull request of a GitHub repository, including author, mergedBy, comments and reviews with their authors and body text.',
         example: '',
     },
-    fetcherConfigSchema: z.object({}),
-    auditConfigSchema: z.object({
+    fetcherConfigSchema: z.object({
         owner: z.string(),
         repository: z.string(),
         token: z.string(),
     }),
-    fetch: async (_fetchConfig, auditConfig) => {
-        const { owner, repository, token } = auditConfig as {
+    fetch: async (_fetcherConfig) => {
+        const { owner, repository, token } = _fetcherConfig as {
             owner: string;
             repository: string;
             token: string;

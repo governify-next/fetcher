@@ -9,22 +9,17 @@ export const generateFetchResult = async (
     partialFetchResult: Partial<IFetchResult>,
     fetcherName: string,
     fetcherConfig: Record<string, unknown>,
-    auditConfig: Record<string, unknown>,
 ) => {
     const initialFetchResult = await createInitialFetchResult(fetcherName, partialFetchResult);
     const fetchResultAndSave = async () => {
         try {
-            const fetchResult = await fetcherService.fetchFetcher(
-                fetcherName,
-                fetcherConfig,
-                auditConfig,
-            );
+            const fetchResult = await fetcherService.fetchFetcher(fetcherName, fetcherConfig);
             return await fetchResultRepository.updateFetchResultByFetcherNameAndId(
                 fetcherName,
                 initialFetchResult._id.toString(),
                 {
                     status: FetchStatus.COMPLETED,
-                    fetchEndDate: new Date(),
+                    endDate: new Date(),
                     data: fetchResult.data,
                 },
             );
@@ -34,7 +29,7 @@ export const generateFetchResult = async (
                 initialFetchResult._id.toString(),
                 {
                     status: FetchStatus.FAILED,
-                    fetchEndDate: new Date(),
+                    endDate: new Date(),
                 },
             );
             throw new ComputationError('Failed to generate fetch result');
@@ -50,11 +45,10 @@ export const generateFetchResult = async (
 
 const createInitialFetchResult = async (fetcherName: string, data: Partial<IFetchResult>) => {
     return await fetchResultRepository.createFetchResultByFetcherName(fetcherName, {
-        fetchStartDate: new Date(),
-        fetchEndDate: null,
-        fetchDate: data.fetchDate,
+        startDate: new Date(),
+        endDate: null,
+        date: data.date,
         status: FetchStatus.IN_PROGRESS,
-        auditConfig: data.auditConfig,
         fetcherConfig: data.fetcherConfig,
         data: null,
     });
@@ -66,14 +60,12 @@ export const getFetchResultsByFetcherName = async (fetcherName: string) => {
 
 export const getFetchResultsByFetchResultBody = async (
     fetcherName: string,
-    fetchDate: Date,
-    auditConfig: Record<string, unknown>,
+    date: Date,
     fetcherConfig: Record<string, unknown>,
 ) => {
     return await fetchResultRepository.getFetchResultsByFetchResultBody(
         fetcherName,
-        fetchDate,
-        auditConfig,
+        date,
         fetcherConfig,
     );
 };

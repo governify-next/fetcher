@@ -6,19 +6,17 @@ import { IFetchResult } from '../models/fetchResult.model.js';
 export const generateFetchResult = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { fetcherName } = req.params;
-        const { fetchDate, fetcherConfig, auditConfig } = req.body;
+        const { date, fetcherConfig } = req.body;
         const isAsync = req.query.isAsync === 'true';
         const partialFetchResult: Partial<IFetchResult> = {
-            fetchDate: fetchDate,
+            date: date,
             fetcherConfig,
-            auditConfig,
         };
         const fetchResult = await fetchResultService.generateFetchResult(
             isAsync,
             partialFetchResult,
             fetcherName,
             fetcherConfig,
-            auditConfig,
         );
 
         return sendSuccess(res, {

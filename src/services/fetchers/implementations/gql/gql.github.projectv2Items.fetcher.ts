@@ -115,14 +115,13 @@ export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
             'Fetches every raw item from all GitHub ProjectsV2 attached to a repository, including field values, content, assignees, linked branches and closing pull requests.',
         example: '',
     },
-    fetcherConfigSchema: z.object({}),
-    auditConfigSchema: z.object({
+    fetcherConfigSchema: z.object({
         owner: z.string(),
         repository: z.string(),
         token: z.string(),
     }),
-    fetch: async (_fetchConfig, auditConfig) => {
-        const { owner, repository, token } = auditConfig as {
+    fetch: async (_fetcherConfig) => {
+        const { owner, repository, token } = _fetcherConfig as {
             owner: string;
             repository: string;
             token: string;

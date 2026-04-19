@@ -16,13 +16,11 @@ export const getFetchResultsByFetcherName = async (fetcherName: string) => {
 
 export const getFetchResultsByFetchResultBody = async (
     fetcherName: string,
-    fetchDate: Date,
-    auditConfig: Record<string, unknown>,
+    date: Date,
     fetcherConfig: Record<string, unknown>,
 ) => {
     return await getFetcherResultsModel(fetcherName).find({
-        fetchDate,
-        auditConfig,
+        date,
         fetcherConfig,
     });
 };

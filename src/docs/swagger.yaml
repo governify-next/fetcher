@@ -346,19 +346,21 @@ components:
                     schema:
                         type: object
                         properties:
+                            date:
+                                type: string
+                                format: date-time
+                                description: Fetch date used to initialize the fetch result
+                                example: '2026-04-10T09:30:00.000Z'
                             fetcherConfig:
                                 $ref: '#/components/schemas/FetcherConfig'
-                            auditConfig:
-                                $ref: '#/components/schemas/AuditConfig'
                         required:
+                            - date
                             - fetcherConfig
-                            - auditConfig
                     example:
-                        fetcherConfig: {}
-                        auditConfig:
+                        date: '2026-04-10T09:30:00.000Z'
+                        fetcherConfig:
                             owner: governify
                             repository: collector
-
         ValidateFetcherBody:
             description: Request body for validating fetcher configuration
             content:
@@ -368,11 +370,8 @@ components:
                         properties:
                             fetcherConfig:
                                 $ref: '#/components/schemas/FetcherConfig'
-                            auditConfig:
-                                $ref: '#/components/schemas/AuditConfig'
                     example:
-                        fetcherConfig: {}
-                        auditConfig:
+                        fetcherConfig:
                             owner: governify
                             repository: collector
 
@@ -383,23 +382,19 @@ components:
                     schema:
                         type: object
                         properties:
-                            fetchDate:
+                            date:
                                 type: string
                                 format: date-time
                                 description: Fetch date used to initialize the fetch result
                                 example: '2026-04-10T09:30:00.000Z'
                             fetcherConfig:
                                 $ref: '#/components/schemas/FetcherConfig'
-                            auditConfig:
-                                $ref: '#/components/schemas/AuditConfig'
                         required:
-                            - fetchDate
+                            - date
                             - fetcherConfig
-                            - auditConfig
                     example:
-                        fetchDate: '2026-04-10T09:30:00.000Z'
-                        fetcherConfig: {}
-                        auditConfig:
+                        date: '2026-04-10T09:30:00.000Z'
+                        fetcherConfig:
                             owner: governify
                             repository: collector
 
@@ -412,8 +407,8 @@ components:
                     example:
                         status: COMPLETED
                         fetchType: SCREENSHOT
-                        fetchDate: '2026-04-06T11:00:00.000Z'
-                        fetchEndDate: '2026-04-06T11:00:00.000Z'
+                        date: '2026-04-06T11:00:00.000Z'
+                        endDate: '2026-04-06T11:00:00.000Z'
                         data: This is a placeholder for GitHub fetcher data
 
     # ── Reusable responses ────────────────────────
@@ -435,8 +430,8 @@ components:
                             details:
                                 - type: field
                                   value: null
-                                  msg: auditConfig is required
-                                  path: auditConfig
+                                  msg: fetcherConfig is required
+                                  path: fetcherConfig
                                   location: body
 
         DuplicateKeyError:
@@ -473,14 +468,14 @@ components:
                         appCode: VALIDATION_ERROR
                         data:
                             valid: false
-                            error: Invalid auditConfig
+                            error: Invalid fetcherConfig
                             issues:
                                 - code: invalid_type
                                   expected: string
                                   path:
                                       - owner
                                   message: 'Invalid input: expected string, received undefined'
-                                  source: auditConfig
+                                  source: fetcherConfig
                         error: null
 
         NotFound:
@@ -610,12 +605,6 @@ components:
                     description: Zod schema definition serialized as object
                     example:
                         type: object
-                        properties: {}
-                auditConfigSchema:
-                    type: object
-                    description: Zod schema definition serialized as object
-                    example:
-                        type: object
                         properties:
                             owner:
                                 type: string
@@ -627,7 +616,7 @@ components:
                 fetchScript:
                     type: string
                     example: |
-                        async (_fetcherConfig, _auditConfig) => {
+                        async (_fetcherConfig) => {
                           return { data: 'This is a placeholder for GitHub fetcher data' };
                         }
             required:
@@ -655,12 +644,6 @@ components:
         FetcherConfig:
             type: object
             description: Fetcher-specific configuration object
-            additionalProperties: true
-            example: {}
-
-        AuditConfig:
-            type: object
-            description: Audit context used by fetchers
             properties:
                 owner:
                     type: string
@@ -710,8 +693,8 @@ components:
                     example: 'Invalid input: expected string, received undefined'
                 source:
                     type: string
-                    enum: [fetcherConfig, auditConfig]
-                    example: auditConfig
+                    enum: [fetcherConfig]
+                    example: fetcherConfig
 
         ValidateFetcherResult:
             type: object
@@ -723,7 +706,7 @@ components:
                 error:
                     type: string
                     nullable: true
-                    example: Invalid auditConfig
+                    example: Invalid fetcherConfig
                 issues:
                     type: array
                     nullable: true
@@ -742,16 +725,16 @@ components:
                 fetcherName:
                     type: string
                     example: FT_REST_GITHUB_COMMITS
-                fetchStartDate:
+                startDate:
                     type: string
                     format: date-time
                     example: '2026-04-06T10:59:55.000Z'
-                fetchEndDate:
+                endDate:
                     type: string
                     format: date-time
                     nullable: true
                     example: '2026-04-06T11:00:00.000Z'
-                fetchDate:
+                date:
                     type: string
                     format: date-time
                     nullable: true
@@ -764,8 +747,6 @@ components:
                     type: string
                     enum: [IN_PROGRESS, COMPLETED, FAILED]
                     example: COMPLETED
-                auditConfig:
-                    $ref: '#/components/schemas/AuditConfig'
                 fetcherConfig:
                     $ref: '#/components/schemas/FetcherConfig'
                 data:
@@ -790,14 +771,14 @@ components:
             properties:
                 fetcherName:
                     type: string
-                fetchStartDate:
+                startDate:
                     type: string
                     format: date-time
-                fetchEndDate:
+                endDate:
                     type: string
                     format: date-time
                     nullable: true
-                fetchDate:
+                date:
                     type: string
                     format: date-time
                     nullable: true
@@ -807,8 +788,6 @@ components:
                 status:
                     type: string
                     enum: [IN_PROGRESS, COMPLETED, FAILED]
-                auditConfig:
-                    $ref: '#/components/schemas/AuditConfig'
                 fetcherConfig:
                     $ref: '#/components/schemas/FetcherConfig'
                 data:

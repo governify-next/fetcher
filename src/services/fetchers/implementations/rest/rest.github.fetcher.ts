@@ -11,12 +11,11 @@ export const FT_REST_GITHUB_COMMITS: IFetcher = {
             'Fetches data from GitHub repositories, including commits, issues, and pull requests.',
         example: '',
     },
-    fetcherConfigSchema: z.object({}),
-    auditConfigSchema: z.object({
+    fetcherConfigSchema: z.object({
         owner: z.string(),
         repository: z.string(),
     }),
-    fetch: async (_fetchConfig, _auditConfig) => {
+    fetch: async (_fetchConfig) => {
         return { data: 'This is a placeholder for GitHub fetcher data' };
     },
 };

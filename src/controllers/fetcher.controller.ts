@@ -5,12 +5,8 @@ import * as fetcherService from '../services/fetchers/fetcher.service.js';
 export const fetchFetcher = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { fetcherName } = req.params;
-        const { fetcherConfig, auditConfig } = req.body;
-        const fetchResult = await fetcherService.fetchFetcher(
-            fetcherName,
-            fetcherConfig,
-            auditConfig,
-        );
+        const { fetcherConfig } = req.body;
+        const fetchResult = await fetcherService.fetchFetcher(fetcherName, fetcherConfig);
         return sendSuccess(res, { data: fetchResult, message: 'Fetcher result generated' });
     } catch (err) {
         next(err);
@@ -39,13 +35,9 @@ export const getFetcherByName = async (req: Request, res: Response, next: NextFu
 export const validateFetcher = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { fetcherName } = req.params;
-        const { fetcherConfig, auditConfig } = req.body;
+        const { fetcherConfig } = req.body;
 
-        const result = await fetcherService.validateFetcher(
-            fetcherName,
-            fetcherConfig,
-            auditConfig,
-        );
+        const result = await fetcherService.validateFetcher(fetcherName, fetcherConfig);
         if (!result.valid) {
             return sendSuccess(res, {
                 data: result,

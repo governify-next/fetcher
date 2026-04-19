@@ -2,22 +2,20 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { FetchStatus } from '../types/fetchStatus.js';
 
 export interface IFetchResult extends Document {
-    fetchStartDate: Date;
-    fetchEndDate: Date | null;
-    fetchDate: Date;
+    startDate: Date;
+    endDate: Date | null;
+    date: Date;
     status: FetchStatus;
-    auditConfig: Record<string, unknown>;
     fetcherConfig: Record<string, unknown>;
     data: unknown | null;
 }
 
 const FetchResultSchema: Schema<IFetchResult> = new Schema(
     {
-        fetchStartDate: { type: Date, required: true },
-        fetchEndDate: { type: Date, default: null },
-        fetchDate: { type: Date, required: true },
+        startDate: { type: Date, required: true },
+        endDate: { type: Date, default: null },
+        date: { type: Date, required: true },
         status: { type: String, enum: Object.values(FetchStatus), required: true },
-        auditConfig: { type: Schema.Types.Mixed, required: true },
         fetcherConfig: { type: Schema.Types.Mixed, required: true },
         data: { type: Schema.Types.Mixed, default: null },
     },

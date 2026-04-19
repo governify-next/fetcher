@@ -37,16 +37,14 @@ export const getFetchers = (): IFetcher[] => {
 export const fetchFetcher = async (
     name: string,
     fetcherConfig: Record<string, unknown>,
-    auditConfig: Record<string, unknown>,
 ): Promise<{ data: unknown }> => {
     const fetcher = getFetcherByName(name);
     try {
         fetcher.fetcherConfigSchema.parse(fetcherConfig);
-        fetcher.auditConfigSchema.parse(auditConfig);
-        return fetcher.fetch(fetcherConfig, auditConfig);
+        return fetcher.fetch(fetcherConfig);
     } catch (error) {
         if (error instanceof ZodError) {
-            throw new ValidationError('Invalid metric or audit configuration', {
+            throw new ValidationError('Invalid fetcherConfig', {
                 issues: error.issues,
             });
         }
@@ -57,7 +55,6 @@ export const fetchFetcher = async (
 export const validateFetcher = async (
     fetcherName: string,
     fetcherConfig: Record<string, unknown>,
-    auditConfig: Record<string, unknown>,
 ): Promise<FetcherValidationResponse> => {
     const fetcher = getFetcherByName(fetcherName);
     if (!fetcher) {
@@ -67,7 +64,6 @@ export const validateFetcher = async (
         };
     }
     let fetcherIssues: ZodError['issues'] = [];
-    let auditIssues: ZodError['issues'] = [];
     if (fetcherConfig) {
         try {
             fetcher.fetcherConfigSchema.parse(fetcherConfig);
@@ -79,34 +75,11 @@ export const validateFetcher = async (
             }
         }
     }
-    if (auditConfig) {
-        try {
-            fetcher.auditConfigSchema.parse(auditConfig);
-        } catch (error) {
-            if (error instanceof ZodError) {
-                auditIssues = error.issues;
-            } else {
-                throw error;
-            }
-        }
-    }
-    if (fetcherIssues.length || auditIssues.length) {
-        let errorMessage = '';
-
-        if (fetcherIssues.length && auditIssues.length) {
-            errorMessage = 'Invalid fetcherConfig and auditConfig';
-        } else if (fetcherIssues.length) {
-            errorMessage = 'Invalid fetcherConfig';
-        } else {
-            errorMessage = 'Invalid auditConfig';
-        }
+    if (fetcherIssues.length) {
         return {
             valid: false,
-            error: errorMessage,
-            issues: [
-                ...fetcherIssues.map((i) => ({ ...i, source: 'fetcherConfig' })),
-                ...auditIssues.map((i) => ({ ...i, source: 'auditConfig' })),
-            ],
+            error: 'Invalid fetcherConfig',
+            issues: fetcherIssues,
         };
     }
 
