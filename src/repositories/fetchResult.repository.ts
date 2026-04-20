@@ -1,48 +1,53 @@
 import { IFetchResult, getFetcherResultsModel } from '../models/fetchResult.model.js';
-import { FetchStatus } from '../types/fetchStatus.js';
 
-export const createFetchResultByFetcherName = async (
-    fetcherName: string,
+export const createFetchResultByFetcherId = async (
+    fetcherId: string,
     fetchResultData: Partial<IFetchResult>,
 ) => {
-    const FetcherResultModel = getFetcherResultsModel(fetcherName);
+    const FetcherResultModel = getFetcherResultsModel(fetcherId);
     const fetchResult = new FetcherResultModel(fetchResultData);
     return await fetchResult.save();
 };
 
-export const getFetchResultsByFetcherName = async (fetcherName: string) => {
-    return await getFetcherResultsModel(fetcherName).find();
+export const getFetchResultsByFetcherId = async (fetcherId: string) => {
+    return await getFetcherResultsModel(fetcherId).find();
 };
 
 export const getFetchResultsByFetchResultBody = async (
-    fetcherName: string,
+    fetcherId: string,
     date: Date,
     fetcherConfig: Record<string, unknown>,
 ) => {
-    return await getFetcherResultsModel(fetcherName).find({
+    return await getFetcherResultsModel(fetcherId).find({
         date,
         fetcherConfig,
     });
 };
 
-export const deleteFetchResultsByFetcherName = async (fetcherName: string) => {
-    return await getFetcherResultsModel(fetcherName).deleteMany({});
+export const deleteFetchResultsByFetcherId = async (fetcherId: string) => {
+    return await getFetcherResultsModel(fetcherId).deleteMany({});
 };
 
-export const getFetchResultByFetcherNameAndId = async (fetcherName: string, id: string) => {
-    return await getFetcherResultsModel(fetcherName).findById(id);
+export const getFetchResultByFetcherIdAndFetchResultId = async (
+    fetcherId: string,
+    fetchResultId: string,
+) => {
+    return await getFetcherResultsModel(fetcherId).findById(fetchResultId);
 };
 
-export const updateFetchResultByFetcherNameAndId = async (
-    fetcherName: string,
-    id: string,
+export const updateFetchResultByFetcherIdAndFetchResultId = async (
+    fetcherId: string,
+    fetchResultId: string,
     updateData: Partial<IFetchResult>,
 ) => {
-    return await getFetcherResultsModel(fetcherName).findByIdAndUpdate(id, updateData, {
+    return await getFetcherResultsModel(fetcherId).findByIdAndUpdate(fetchResultId, updateData, {
         new: true,
     });
 };
 
-export const deleteFetchResultByFetcherNameAndId = async (fetcherName: string, id: string) => {
-    return await getFetcherResultsModel(fetcherName).findByIdAndDelete(id);
+export const deleteFetchResultByFetcherIdAndFetchResultId = async (
+    fetcherId: string,
+    fetchResultId: string,
+) => {
+    return await getFetcherResultsModel(fetcherId).findByIdAndDelete(fetchResultId);
 };

@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import * as fetchResultController from '../controllers/fetchResult.controller.js';
 import {
-    validateFetcherName,
-    validateFetcherFetchValidation,
+    validateFetcherId,
+    validateFetcherConfig,
+    validateFetcherFetchBody,
 } from '../middlewares/fetcher.validator.js';
 import {
+    validateExistingFetchResult,
     validateFetchResultId,
     validateExistingFetchResultBeforeGeneration,
 } from '../middlewares/fetchResult.validator.js';
@@ -12,37 +14,41 @@ import {
 export const fetchResultRoutes = Router();
 
 fetchResultRoutes.post(
-    '/fetchResults/fetchers/:fetcherName/generate',
-    validateFetcherName,
-    validateFetcherFetchValidation,
+    '/fetchers/:fetcherId/fetchResults/generate',
+    validateFetcherFetchBody,
+    validateFetcherId,
+    validateFetcherConfig,
     validateExistingFetchResultBeforeGeneration,
     fetchResultController.generateFetchResult,
 );
+fetchResultRoutes.get(
+    '/fetchers/:fetcherId/fetchResults',
+    validateFetcherId,
+    fetchResultController.getFetchResultsByFetcherId,
+);
 fetchResultRoutes.delete(
-    '/fetchResults/fetchers/:fetcherName',
-    validateFetcherName,
-    fetchResultController.deleteFetchResultsByFetcherName,
+    '/fetchers/:fetcherId/fetchResults',
+    validateFetcherId,
+    fetchResultController.deleteFetchResultsByFetcherId,
 );
 fetchResultRoutes.get(
-    '/fetchResults/fetchers/:fetcherName',
-    validateFetcherName,
-    fetchResultController.getFetchResultsByFetcherName,
-);
-fetchResultRoutes.get(
-    '/fetchResults/fetchers/:fetcherName/:id',
-    validateFetcherName,
+    '/fetchers/:fetcherId/fetchResults/:fetchResultId',
+    validateFetcherId,
     validateFetchResultId,
-    fetchResultController.getFetchResultByFetcherNameAndId,
+    validateExistingFetchResult,
+    fetchResultController.getFetchResultByFetcherIdAndFetchResultId,
 );
 fetchResultRoutes.put(
-    '/fetchResults/fetchers/:fetcherName/:id',
-    validateFetcherName,
+    '/fetchers/:fetcherId/fetchResults/:fetchResultId',
+    validateFetcherId,
     validateFetchResultId,
-    fetchResultController.updateFetchResultByFetcherNameAndId,
+    validateExistingFetchResult,
+    fetchResultController.updateFetchResultByFetcherIdAndFetchResultId,
 );
 fetchResultRoutes.delete(
-    '/fetchResults/fetchers/:fetcherName/:id',
-    validateFetcherName,
+    '/fetchers/:fetcherId/fetchResults/:fetchResultId',
+    validateFetcherId,
     validateFetchResultId,
-    fetchResultController.deleteFetchResultByFetcherNameAndId,
+    validateExistingFetchResult,
+    fetchResultController.deleteFetchResultByFetcherIdAndFetchResultId,
 );

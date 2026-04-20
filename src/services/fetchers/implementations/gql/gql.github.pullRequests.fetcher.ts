@@ -78,7 +78,7 @@ const getPullRequests = async (
 };
 
 export const FT_GQL_GITHUB_PULL_REQUESTS: IFetcher = {
-    name: 'FT_GQL_GITHUB_PULL_REQUESTS',
+    id: 'FT_GQL_GITHUB_PULL_REQUESTS',
     type: FetchType.SCREENSHOT,
     moreInfo: {
         title: 'GitHub Pull Requests Fetcher',

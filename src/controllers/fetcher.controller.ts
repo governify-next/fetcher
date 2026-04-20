@@ -4,9 +4,9 @@ import * as fetcherService from '../services/fetchers/fetcher.service.js';
 
 export const fetchFetcher = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { fetcherName } = req.params;
+        const { fetcherId } = req.params;
         const { fetcherConfig } = req.body;
-        const fetchResult = await fetcherService.fetchFetcher(fetcherName, fetcherConfig);
+        const fetchResult = await fetcherService.fetchFetcher(fetcherId, fetcherConfig);
         return sendSuccess(res, { data: fetchResult, message: 'Fetcher result generated' });
     } catch (err) {
         next(err);
@@ -22,10 +22,10 @@ export const getFetchers = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-export const getFetcherByName = async (req: Request, res: Response, next: NextFunction) => {
+export const getFetcherById = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { fetcherName } = req.params;
-        const fetcher = await fetcherService.getFetcherByName(fetcherName);
+        const { fetcherId } = req.params;
+        const fetcher = await fetcherService.getFetcherById(fetcherId);
         return sendSuccess(res, { data: fetcher, message: 'Fetcher retrieved' });
     } catch (err) {
         next(err);
@@ -34,19 +34,17 @@ export const getFetcherByName = async (req: Request, res: Response, next: NextFu
 
 export const validateFetcher = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { fetcherName } = req.params;
+        const { fetcherId } = req.params;
         const { fetcherConfig } = req.body;
 
-        const result = await fetcherService.validateFetcher(fetcherName, fetcherConfig);
+        const result = await fetcherService.validateFetcher(fetcherId, fetcherConfig);
         if (!result.valid) {
             return sendSuccess(res, {
                 data: result,
                 message: 'Fetcher validation failed',
-                httpStatus: 400,
-                appCode: 'VALIDATION_ERROR',
             });
         }
-        return sendSuccess(res, { data: result, message: 'Fetcher validated' });
+        return sendSuccess(res, { data: result, message: 'Fetcher validation passed' });
     } catch (err) {
         next(err);
     }

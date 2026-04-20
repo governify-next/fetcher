@@ -3,7 +3,7 @@ import { FetchType } from '../../../../types/fetchType.js';
 import { z } from 'zod';
 
 export const FT_REST_BLUEJAY_REPORTER_LOGS: IFetcher = {
-    name: 'FT_REST_BLUEJAY_REPORTER_LOGS',
+    id: 'FT_REST_BLUEJAY_REPORTER_LOGS',
     type: FetchType.SCREENSHOT,
     moreInfo: {
         title: 'Reporter Logs Fetcher',

@@ -5,7 +5,7 @@ import { IFetchResult } from '../models/fetchResult.model.js';
 
 export const generateFetchResult = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { fetcherName } = req.params;
+        const { fetcherId } = req.params;
         const { date, fetcherConfig } = req.body;
         const isAsync = req.query.isAsync === 'true';
         const partialFetchResult: Partial<IFetchResult> = {
@@ -15,60 +15,58 @@ export const generateFetchResult = async (req: Request, res: Response, next: Nex
         const fetchResult = await fetchResultService.generateFetchResult(
             isAsync,
             partialFetchResult,
-            fetcherName,
+            fetcherId,
             fetcherConfig,
         );
 
         return sendSuccess(res, {
             data: fetchResult,
-            message: isAsync
-                ? 'Fetch result created and in progress'
-                : 'Fetch result created and generated',
+            message: isAsync ? 'Fetch result started asynchronously' : 'Fetch result generated',
         });
     } catch (err) {
         next(err);
     }
 };
 
-export const getFetchResultsByFetcherName = async (
+export const getFetchResultsByFetcherId = async (
     req: Request,
     res: Response,
     next: NextFunction,
 ) => {
     try {
-        const { fetcherName } = req.params;
-        const fetchResults = await fetchResultService.getFetchResultsByFetcherName(fetcherName);
+        const { fetcherId } = req.params;
+        const fetchResults = await fetchResultService.getFetchResultsByFetcherId(fetcherId);
         return sendSuccess(res, { data: fetchResults, message: 'Fetch results retrieved' });
     } catch (err) {
         next(err);
     }
 };
 
-export const deleteFetchResultsByFetcherName = async (
+export const deleteFetchResultsByFetcherId = async (
     req: Request,
     res: Response,
     next: NextFunction,
 ) => {
     try {
-        const { fetcherName } = req.params;
+        const { fetcherId } = req.params;
         const deletedFetchResults =
-            await fetchResultService.deleteFetchResultsByFetcherName(fetcherName);
+            await fetchResultService.deleteFetchResultsByFetcherId(fetcherId);
         return sendSuccess(res, { data: deletedFetchResults, message: 'Fetch results deleted' });
     } catch (err) {
         next(err);
     }
 };
 
-export const getFetchResultByFetcherNameAndId = async (
+export const getFetchResultByFetcherIdAndFetchResultId = async (
     req: Request,
     res: Response,
     next: NextFunction,
 ) => {
     try {
-        const { id, fetcherName } = req.params;
-        const fetchResult = await fetchResultService.getFetchResultByFetcherNameAndId(
-            fetcherName,
-            id,
+        const { fetchResultId, fetcherId } = req.params;
+        const fetchResult = await fetchResultService.getFetchResultByFetcherIdAndFetchResultId(
+            fetcherId,
+            fetchResultId,
         );
         return sendSuccess(res, { data: fetchResult, message: 'Fetch result retrieved' });
     } catch (err) {
@@ -76,36 +74,38 @@ export const getFetchResultByFetcherNameAndId = async (
     }
 };
 
-export const updateFetchResultByFetcherNameAndId = async (
+export const updateFetchResultByFetcherIdAndFetchResultId = async (
     req: Request,
     res: Response,
     next: NextFunction,
 ) => {
     try {
-        const { id, fetcherName } = req.params;
+        const { fetchResultId, fetcherId } = req.params;
         const updateData: Partial<IFetchResult> = req.body;
-        const updatedFetchResult = await fetchResultService.updateFetchResultByFetcherNameAndId(
-            fetcherName,
-            id,
-            updateData,
-        );
+        const updatedFetchResult =
+            await fetchResultService.updateFetchResultByFetcherIdAndFetchResultId(
+                fetcherId,
+                fetchResultId,
+                updateData,
+            );
         return sendSuccess(res, { data: updatedFetchResult, message: 'Fetch result updated' });
     } catch (err) {
         next(err);
     }
 };
 
-export const deleteFetchResultByFetcherNameAndId = async (
+export const deleteFetchResultByFetcherIdAndFetchResultId = async (
     req: Request,
     res: Response,
     next: NextFunction,
 ) => {
     try {
-        const { id, fetcherName } = req.params;
-        const deletedFetchResult = await fetchResultService.deleteFetchResultByFetcherNameAndId(
-            fetcherName,
-            id,
-        );
+        const { fetchResultId, fetcherId } = req.params;
+        const deletedFetchResult =
+            await fetchResultService.deleteFetchResultByFetcherIdAndFetchResultId(
+                fetcherId,
+                fetchResultId,
+            );
         return sendSuccess(res, { data: deletedFetchResult, message: 'Fetch result deleted' });
     } catch (err) {
         next(err);

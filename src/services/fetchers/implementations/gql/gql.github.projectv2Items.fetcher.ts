@@ -107,7 +107,7 @@ const getProjectItems = async (projectId: string, token: string): Promise<unknow
 };
 
 export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
-    name: 'FT_GQL_GITHUB_PROJECTV2_ITEMS',
+    id: 'FT_GQL_GITHUB_PROJECTV2_ITEMS',
     type: FetchType.SCREENSHOT,
     moreInfo: {
         title: 'GitHub ProjectV2 Items Fetcher',

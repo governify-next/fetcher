@@ -2,6 +2,7 @@ import { body, validationResult } from 'express-validator';
 import { type Request, type Response, type NextFunction } from 'express';
 import { NotFoundError, ValidationError } from '../utils/customErrors.js';
 import * as fetcherService from '../services/fetchers/fetcher.service.js';
+import { ZodError } from 'zod';
 
 // ─── Express-validator ─────────────────────────────
 
@@ -11,12 +12,31 @@ const collectValidationErrors = (req: Request, res: Response, next: NextFunction
     next();
 };
 
-export const validateFetcherName = async (req: Request, res: Response, next: NextFunction) => {
+export const validateFetcherId = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { fetcherName } = req.params;
-        const fetcher = fetcherService.getFetcherByName(fetcherName);
+        const { fetcherId } = req.params;
+        const fetcher = fetcherService.getFetcherById(fetcherId);
         if (!fetcher) {
-            return next(new NotFoundError(`Fetcher ${fetcherName} not found`));
+            return next(new NotFoundError(`Fetcher ${fetcherId} not found`));
+        }
+        next();
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const validateFetcherConfig = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { fetcherId } = req.params;
+        const { fetcherConfig } = req.body;
+        const fetcher = fetcherService.getFetcherById(fetcherId);
+        try {
+            fetcher.fetcherConfigSchema.parse(fetcherConfig);
+        } catch (error) {
+            if (error instanceof ZodError) {
+                return next(new ValidationError('Invalid fetcherConfig', { issues: error.issues }));
+            }
+            throw error;
         }
         next();
     } catch (err) {
@@ -43,7 +63,7 @@ const fetcherConfigRequiredValidation = body('fetcherConfig')
 
 export const validateFetcherValidation = [fetcherConfigOptionalValidation, collectValidationErrors];
 
-export const validateFetcherFetchValidation = [
+export const validateFetcherFetchBody = [
     dateRequiredValidation,
     fetcherConfigRequiredValidation,
     collectValidationErrors,

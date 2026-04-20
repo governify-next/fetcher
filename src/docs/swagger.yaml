@@ -61,15 +61,15 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
 
-    /api/v1/fetchers/{fetcherName}:
+    /api/v1/fetchers/{fetcherId}:
         parameters:
-            - $ref: '#/components/parameters/fetcherName'
+            - $ref: '#/components/parameters/fetcherId'
         get:
             tags:
                 - Fetchers
-            summary: Get fetcher by name
-            operationId: getFetcherByName
-            description: Retrieves the details of a specific fetcher by its name.
+            summary: Get fetcher by ID
+            operationId: getFetcherById
+            description: Retrieves the details of a specific fetcher by its ID.
             responses:
                 '200':
                     description: Fetcher retrieved successfully.
@@ -87,9 +87,9 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
 
-    /api/v1/fetchers/{fetcherName}/fetch:
+    /api/v1/fetchers/{fetcherId}/fetch:
         parameters:
-            - $ref: '#/components/parameters/fetcherName'
+            - $ref: '#/components/parameters/fetcherId'
         post:
             tags:
                 - Fetchers
@@ -117,9 +117,9 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
 
-    /api/v1/fetchers/{fetcherName}/validate:
+    /api/v1/fetchers/{fetcherId}/validate:
         parameters:
-            - $ref: '#/components/parameters/fetcherName'
+            - $ref: '#/components/parameters/fetcherId'
         post:
             tags:
                 - Fetchers
@@ -150,132 +150,9 @@ paths:
     # ──────────────────────────────────────────────
     # Fetch Results
     # ──────────────────────────────────────────────
-    /api/v1/fetchResults/fetchers/{fetcherName}:
+    /api/v1/fetchers/{fetcherId}/fetchResults/generate:
         parameters:
-            - $ref: '#/components/parameters/fetcherName'
-        get:
-            tags:
-                - Fetch Results
-            summary: Get fetch results by fetcher name
-            operationId: getFetchResultsByFetcherName
-            description: Retrieves all fetch results associated with a given fetcher.
-            responses:
-                '200':
-                    description: Fetch results retrieved successfully.
-                    content:
-                        application/json:
-                            schema:
-                                allOf:
-                                    - $ref: '#/components/schemas/SuccessResponse'
-                                    - type: object
-                                      properties:
-                                          data:
-                                              type: array
-                                              items:
-                                                  $ref: '#/components/schemas/FetchResult'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-                '500':
-                    $ref: '#/components/responses/InternalError'
-        delete:
-            tags:
-                - Fetch Results
-            summary: Delete fetch results by fetcher name
-            operationId: deleteFetchResultsByFetcherName
-            description: Deletes all fetch results associated with a given fetcher.
-            responses:
-                '200':
-                    description: Fetch results deleted successfully.
-                    content:
-                        application/json:
-                            schema:
-                                allOf:
-                                    - $ref: '#/components/schemas/SuccessResponse'
-                                    - type: object
-                                      properties:
-                                          data:
-                                              $ref: '#/components/schemas/DeleteManyResult'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-                '500':
-                    $ref: '#/components/responses/InternalError'
-
-    /api/v1/fetchResults/fetchers/{fetcherName}/{id}:
-        parameters:
-            - $ref: '#/components/parameters/fetcherName'
-            - $ref: '#/components/parameters/fetchResultId'
-        get:
-            tags:
-                - Fetch Results
-            summary: Get fetch result by fetcher name and id
-            operationId: getFetchResultByFetcherNameAndId
-            description: Retrieves a single fetch result by fetcher name and identifier.
-            responses:
-                '200':
-                    description: Fetch result retrieved successfully.
-                    content:
-                        application/json:
-                            schema:
-                                allOf:
-                                    - $ref: '#/components/schemas/SuccessResponse'
-                                    - type: object
-                                      properties:
-                                          data:
-                                              $ref: '#/components/schemas/FetchResult'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-                '500':
-                    $ref: '#/components/responses/InternalError'
-        put:
-            tags:
-                - Fetch Results
-            summary: Update fetch result by fetcher name and id
-            operationId: updateFetchResultByFetcherNameAndId
-            description: Updates a fetch result by fetcher name and identifier.
-            requestBody:
-                $ref: '#/components/requestBodies/UpdateFetchResultBody'
-            responses:
-                '200':
-                    description: Fetch result updated successfully.
-                    content:
-                        application/json:
-                            schema:
-                                allOf:
-                                    - $ref: '#/components/schemas/SuccessResponse'
-                                    - type: object
-                                      properties:
-                                          data:
-                                              $ref: '#/components/schemas/FetchResult'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-                '500':
-                    $ref: '#/components/responses/InternalError'
-        delete:
-            tags:
-                - Fetch Results
-            summary: Delete fetch result by fetcher name and id
-            operationId: deleteFetchResultByFetcherNameAndId
-            description: Deletes a fetch result by fetcher name and identifier.
-            responses:
-                '200':
-                    description: Fetch result deleted successfully.
-                    content:
-                        application/json:
-                            schema:
-                                allOf:
-                                    - $ref: '#/components/schemas/SuccessResponse'
-                                    - type: object
-                                      properties:
-                                          data:
-                                              $ref: '#/components/schemas/FetchResult'
-                '404':
-                    $ref: '#/components/responses/NotFound'
-                '500':
-                    $ref: '#/components/responses/InternalError'
-
-    /api/v1/fetchResults/fetchers/{fetcherName}/generate:
-        parameters:
-            - $ref: '#/components/parameters/fetcherName'
+            - $ref: '#/components/parameters/fetcherId'
             - $ref: '#/components/parameters/isAsync'
         post:
             tags:
@@ -308,19 +185,142 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
 
+    /api/v1/fetchers/{fetcherId}/fetchResults:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
+        get:
+            tags:
+                - Fetch Results
+            summary: Get fetch results by fetcher ID
+            operationId: getFetchResultsByFetcherId
+            description: Retrieves all fetch results associated with a given fetcher.
+            responses:
+                '200':
+                    description: Fetch results retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              type: array
+                                              items:
+                                                  $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        delete:
+            tags:
+                - Fetch Results
+            summary: Delete fetch results by fetcher ID
+            operationId: deleteFetchResultsByFetcherId
+            description: Deletes all fetch results associated with a given fetcher.
+            responses:
+                '200':
+                    description: Fetch results deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/DeleteManyResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchers/{fetcherId}/fetchResults/{fetchResultId}:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
+            - $ref: '#/components/parameters/fetchResultId'
+        get:
+            tags:
+                - Fetch Results
+            summary: Get fetch result by fetcher ID and fetch result ID
+            operationId: getFetchResultByFetcherIdAndFetchResultId
+            description: Retrieves a single fetch result by fetcher ID and fetch result ID.
+            responses:
+                '200':
+                    description: Fetch result retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        put:
+            tags:
+                - Fetch Results
+            summary: Update fetch result by fetcher ID and fetch result ID
+            operationId: updateFetchResultByFetcherIdAndFetchResultId
+            description: Updates a fetch result by fetcher ID and fetch result ID.
+            requestBody:
+                $ref: '#/components/requestBodies/UpdateFetchResultBody'
+            responses:
+                '200':
+                    description: Fetch result updated successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        delete:
+            tags:
+                - Fetch Results
+            summary: Delete fetch result by fetcher ID and fetch result ID
+            operationId: deleteFetchResultByFetcherIdAndFetchResultId
+            description: Deletes a fetch result by fetcher ID and fetch result ID.
+            responses:
+                '200':
+                    description: Fetch result deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
 components:
     # ── Parameters ────────────────────────────
     parameters:
-        fetcherName:
-            name: fetcherName
+        fetcherId:
+            name: fetcherId
             in: path
             required: true
-            description: Name of the fetcher
+            description: ID of the fetcher
             schema:
                 type: string
                 example: FT_REST_GITHUB_COMMITS
         fetchResultId:
-            name: id
+            name: fetchResultId
             in: path
             required: true
             description: Fetch result identifier
@@ -722,7 +722,7 @@ components:
                 _id:
                     type: string
                     example: 67c9ff7b2ddf1b3940f9f321
-                fetcherName:
+                fetcherId:
                     type: string
                     example: FT_REST_GITHUB_COMMITS
                 startDate:
@@ -769,7 +769,7 @@ components:
             type: object
             description: Partial payload for updating a fetch result
             properties:
-                fetcherName:
+                fetcherId:
                     type: string
                 startDate:
                     type: string

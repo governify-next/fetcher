@@ -1,6 +1,5 @@
 import { ZodError } from 'zod';
 import { IFetcher } from '../../types/fetcher.js';
-import { ValidationError } from '../../utils/customErrors.js';
 
 import { FT_REST_GITHUB_COMMITS } from './implementations/rest/rest.github.fetcher.js';
 import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/rest.bluejay.fetcher.js';
@@ -24,9 +23,9 @@ const injectFetchScriptStringToMetric = (
 };
 injectFetchScriptStringToMetric(fetchers);
 
-export type FetcherName = keyof typeof fetchers;
-export const getFetcherByName = (name: string): IFetcher => {
-    const fetcher = fetchers[name as FetcherName];
+export type FetcherId = keyof typeof fetchers;
+export const getFetcherById = (id: string): IFetcher => {
+    const fetcher = fetchers[id as FetcherId];
     return fetcher;
 };
 
@@ -35,47 +34,33 @@ export const getFetchers = (): IFetcher[] => {
 };
 
 export const fetchFetcher = async (
-    name: string,
+    id: string,
     fetcherConfig: Record<string, unknown>,
 ): Promise<{ data: unknown }> => {
-    const fetcher = getFetcherByName(name);
-    try {
-        fetcher.fetcherConfigSchema.parse(fetcherConfig);
-        return fetcher.fetch(fetcherConfig);
-    } catch (error) {
-        if (error instanceof ZodError) {
-            throw new ValidationError('Invalid fetcherConfig', {
-                issues: error.issues,
-            });
-        }
-        throw error;
-    }
+    const fetcher = getFetcherById(id);
+    return fetcher.fetch(fetcherConfig);
 };
 
 export const validateFetcher = async (
-    fetcherName: string,
+    fetcherId: string,
     fetcherConfig: Record<string, unknown>,
 ): Promise<FetcherValidationResponse> => {
-    const fetcher = getFetcherByName(fetcherName);
+    const fetcher = getFetcherById(fetcherId);
     if (!fetcher) {
         return {
             valid: false,
-            error: `Fetcher "${fetcherName}" not found`,
+            error: `Fetcher ${fetcherId} not found`,
         };
     }
     let fetcherIssues: ZodError['issues'] = [];
-    if (fetcherConfig) {
-        try {
-            fetcher.fetcherConfigSchema.parse(fetcherConfig);
-        } catch (error) {
-            if (error instanceof ZodError) {
-                fetcherIssues = error.issues;
-            } else {
-                throw error;
-            }
+    try {
+        fetcher.fetcherConfigSchema.parse(fetcherConfig);
+    } catch (error) {
+        if (error instanceof ZodError) {
+            fetcherIssues = error.issues;
         }
     }
-    if (fetcherIssues.length) {
+    if (fetcherIssues.length > 0) {
         return {
             valid: false,
             error: 'Invalid fetcherConfig',

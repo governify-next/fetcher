@@ -1,28 +1,25 @@
 import { Router } from 'express';
 import {
-    validateFetcherName,
+    validateFetcherId,
+    validateFetcherConfig,
     validateFetcherValidation,
-    validateFetcherFetchValidation,
+    validateFetcherFetchBody,
 } from '../middlewares/fetcher.validator.js';
 import * as fetcherController from '../controllers/fetcher.controller.js';
 
 export const fetcherRoutes = Router();
 
 fetcherRoutes.get('/fetchers', fetcherController.getFetchers);
-fetcherRoutes.get(
-    '/fetchers/:fetcherName',
-    validateFetcherName,
-    fetcherController.getFetcherByName,
-);
+fetcherRoutes.get('/fetchers/:fetcherId', validateFetcherId, fetcherController.getFetcherById);
 fetcherRoutes.post(
-    '/fetchers/:fetcherName/fetch',
-    validateFetcherName,
-    validateFetcherFetchValidation,
+    '/fetchers/:fetcherId/fetch',
+    validateFetcherFetchBody,
+    validateFetcherId,
+    validateFetcherConfig,
     fetcherController.fetchFetcher,
 );
 fetcherRoutes.post(
-    '/fetchers/:fetcherName/validate',
-    validateFetcherName,
+    '/fetchers/:fetcherId/validate',
     validateFetcherValidation,
     fetcherController.validateFetcher,
 );

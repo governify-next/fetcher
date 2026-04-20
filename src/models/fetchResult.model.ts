@@ -25,21 +25,21 @@ const FetchResultSchema: Schema<IFetchResult> = new Schema(
 const FETCH_RESULT_COLLECTION_PREFIX = 'fetchresults';
 const FETCH_RESULT_MODEL_PREFIX = 'FetchResult';
 
-const sanitizeFetcherName = (fetcherName: string): string => {
-    return fetcherName
+const sanitizeFetcherId = (fetcherId: string): string => {
+    return fetcherId
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9_]+/g, '_')
         .replace(/^_+|_+$/g, '');
 };
 
-export const getFetcherResultsCollectionName = (fetcherName: string): string => {
-    const sanitizedFetcherName = sanitizeFetcherName(fetcherName);
-    return `${FETCH_RESULT_COLLECTION_PREFIX}_${sanitizedFetcherName}`;
+export const getFetcherResultsCollectionName = (fetcherId: string): string => {
+    const sanitizedFetcherId = sanitizeFetcherId(fetcherId);
+    return `${FETCH_RESULT_COLLECTION_PREFIX}_${sanitizedFetcherId}`;
 };
 
-export const getFetcherResultsModel = (fetcherName: string) => {
-    const modelName = `${FETCH_RESULT_MODEL_PREFIX}_${sanitizeFetcherName(fetcherName)}`;
+export const getFetcherResultsModel = (fetcherId: string) => {
+    const modelName = `${FETCH_RESULT_MODEL_PREFIX}_${sanitizeFetcherId(fetcherId)}`;
     const existingModel = mongoose.models[modelName] as mongoose.Model<IFetchResult> | undefined;
     if (existingModel) {
         return existingModel;
@@ -47,6 +47,6 @@ export const getFetcherResultsModel = (fetcherName: string) => {
     return mongoose.model<IFetchResult>(
         modelName,
         FetchResultSchema,
-        getFetcherResultsCollectionName(fetcherName),
+        getFetcherResultsCollectionName(fetcherId),
     );
 };
