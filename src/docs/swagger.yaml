@@ -130,7 +130,7 @@ paths:
                 $ref: '#/components/requestBodies/ValidateFetcherBody'
             responses:
                 '200':
-                    description: Fetcher configuration is valid.
+                    description: Fetcher configuration validation completed (valid or invalid).
                     content:
                         application/json:
                             schema:
@@ -141,9 +141,7 @@ paths:
                                           data:
                                               $ref: '#/components/schemas/ValidateFetcherResult'
                 '400':
-                    $ref: '#/components/responses/ValidateFetcherValidationError'
-                '404':
-                    $ref: '#/components/responses/NotFound'
+                    $ref: '#/components/responses/ValidationError'
                 '500':
                     $ref: '#/components/responses/InternalError'
 
@@ -164,7 +162,7 @@ paths:
                 $ref: '#/components/requestBodies/GenerateFetchResultBody'
             responses:
                 '200':
-                    description: Fetch result created successfully.
+                    description: Fetch result created successfully (or existing duplicated result returned).
                     content:
                         application/json:
                             schema:
@@ -176,8 +174,6 @@ paths:
                                               $ref: '#/components/schemas/FetchResult'
                 '400':
                     $ref: '#/components/responses/ValidationError'
-                '409':
-                    $ref: '#/components/responses/DuplicateKeyError'
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '422':
@@ -257,6 +253,8 @@ paths:
                                       properties:
                                           data:
                                               $ref: '#/components/schemas/FetchResult'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '500':
@@ -281,6 +279,8 @@ paths:
                                       properties:
                                           data:
                                               $ref: '#/components/schemas/FetchResult'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '500':
@@ -303,6 +303,8 @@ paths:
                                       properties:
                                           data:
                                               $ref: '#/components/schemas/FetchResult'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '500':
@@ -406,7 +408,7 @@ components:
                         $ref: '#/components/schemas/UpdateFetchResultRequest'
                     example:
                         status: COMPLETED
-                        fetchType: SCREENSHOT
+                        startDate: '2026-04-06T10:59:55.000Z'
                         date: '2026-04-06T11:00:00.000Z'
                         endDate: '2026-04-06T11:00:00.000Z'
                         data: This is a placeholder for GitHub fetcher data
@@ -433,50 +435,6 @@ components:
                                   msg: fetcherConfig is required
                                   path: fetcherConfig
                                   location: body
-
-        DuplicateKeyError:
-            description: The fetch result was already calculated with the same parameters
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ErrorResponse'
-                    example:
-                        success: false
-                        message: Fetch result already calculated for the provided parameters
-                        httpStatus: 409
-                        appCode: DUPLICATE_KEY
-                        data: null
-                        error:
-                            message: Fetch result already calculated for the provided parameters
-                            details: null
-
-        ValidateFetcherValidationError:
-            description: Fetcher configuration validation failed
-            content:
-                application/json:
-                    schema:
-                        allOf:
-                            - $ref: '#/components/schemas/SuccessResponse'
-                            - type: object
-                              properties:
-                                  data:
-                                      $ref: '#/components/schemas/ValidateFetcherResult'
-                    example:
-                        success: true
-                        message: Fetcher validation failed
-                        httpStatus: 400
-                        appCode: VALIDATION_ERROR
-                        data:
-                            valid: false
-                            error: Invalid fetcherConfig
-                            issues:
-                                - code: invalid_type
-                                  expected: string
-                                  path:
-                                      - owner
-                                  message: 'Invalid input: expected string, received undefined'
-                                  source: fetcherConfig
-                        error: null
 
         NotFound:
             description: The requested resource does not exist
@@ -544,6 +502,15 @@ components:
                 appCode:
                     type: string
                     example: SUCCESS
+                data:
+                    description: Response payload
+                    nullable: true
+                    oneOf:
+                        - type: object
+                        - type: array
+                        - type: string
+                        - type: number
+                        - type: boolean
                 error:
                     type: object
                     nullable: true
@@ -580,7 +547,12 @@ components:
                             type: string
                         details:
                             description: Additional error information (may be null)
-                            type: object
+                            oneOf:
+                                - type: object
+                                - type: array
+                                - type: string
+                                - type: number
+                                - type: boolean
                             nullable: true
             required:
                 - success
@@ -595,9 +567,13 @@ components:
             type: object
             description: Fetcher definition and metadata
             properties:
-                name:
+                id:
                     type: string
                     example: FT_REST_GITHUB_COMMITS
+                type:
+                    type: string
+                    enum: [SCREENSHOT, HISTORICAL]
+                    example: SCREENSHOT
                 moreInfo:
                     $ref: '#/components/schemas/FetcherMoreInfo'
                 fetcherConfigSchema:
@@ -620,7 +596,8 @@ components:
                           return { data: 'This is a placeholder for GitHub fetcher data' };
                         }
             required:
-                - name
+                - id
+                - type
                 - moreInfo
 
         FetcherMoreInfo:
@@ -643,17 +620,11 @@ components:
 
         FetcherConfig:
             type: object
-            description: Fetcher-specific configuration object
-            properties:
-                owner:
-                    type: string
-                    example: governify
-                repository:
-                    type: string
-                    example: collector
-            required:
-                - owner
-                - repository
+            description: Fetcher-specific configuration object (shape depends on fetcherId)
+            additionalProperties: true
+            example:
+                owner: governify
+                repository: collector
 
         FetcherExecutionResult:
             type: object
@@ -722,9 +693,6 @@ components:
                 _id:
                     type: string
                     example: 67c9ff7b2ddf1b3940f9f321
-                fetcherId:
-                    type: string
-                    example: FT_REST_GITHUB_COMMITS
                 startDate:
                     type: string
                     format: date-time
@@ -739,10 +707,6 @@ components:
                     format: date-time
                     nullable: true
                     example: '2026-04-06T11:00:00.000Z'
-                fetchType:
-                    type: string
-                    enum: [SCREENSHOT, HISTORICAL]
-                    example: SCREENSHOT
                 status:
                     type: string
                     enum: [IN_PROGRESS, COMPLETED, FAILED]
@@ -769,8 +733,6 @@ components:
             type: object
             description: Partial payload for updating a fetch result
             properties:
-                fetcherId:
-                    type: string
                 startDate:
                     type: string
                     format: date-time
@@ -782,9 +744,6 @@ components:
                     type: string
                     format: date-time
                     nullable: true
-                fetchType:
-                    type: string
-                    enum: [SCREENSHOT, HISTORICAL]
                 status:
                     type: string
                     enum: [IN_PROGRESS, COMPLETED, FAILED]
