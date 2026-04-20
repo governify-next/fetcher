@@ -570,10 +570,6 @@ components:
                 id:
                     type: string
                     example: FT_REST_GITHUB_COMMITS
-                type:
-                    type: string
-                    enum: [SCREENSHOT, HISTORICAL]
-                    example: SCREENSHOT
                 moreInfo:
                     $ref: '#/components/schemas/FetcherMoreInfo'
                 fetcherConfigSchema:

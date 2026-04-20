@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
-import { FetchType } from '../../../../types/fetchType.js';
 import { githubGraphQL } from '../../utils/github.graphql.util.js';
 
 interface GithubProject {
@@ -108,7 +107,6 @@ const getProjectItems = async (projectId: string, token: string): Promise<unknow
 
 export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
     id: 'FT_GQL_GITHUB_PROJECTV2_ITEMS',
-    type: FetchType.SCREENSHOT,
     moreInfo: {
         title: 'GitHub ProjectV2 Items Fetcher',
         description:
