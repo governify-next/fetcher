@@ -6,11 +6,11 @@ import { ComputationError } from '../utils/customErrors.js';
 
 export const generateFetchResult = async (
     isAsync: boolean,
-    partialFetchResult: Partial<IFetchResult>,
     fetcherId: string,
+    date: Date,
     fetcherConfig: Record<string, unknown>,
 ) => {
-    const initialFetchResult = await createInitialFetchResult(fetcherId, partialFetchResult);
+    const initialFetchResult = await createInitialFetchResult(fetcherId, date, fetcherConfig);
     const fetchResultAndSave = async () => {
         try {
             const fetchResult = await fetcherService.fetchFetcher(fetcherId, fetcherConfig);
@@ -43,13 +43,17 @@ export const generateFetchResult = async (
     return await fetchResultAndSave(); // Sync
 };
 
-const createInitialFetchResult = async (fetcherId: string, data: Partial<IFetchResult>) => {
+const createInitialFetchResult = async (
+    fetcherId: string,
+    date: Date,
+    fetcherConfig: Record<string, unknown>,
+) => {
     return await fetchResultRepository.createFetchResultByFetcherId(fetcherId, {
         startDate: new Date(),
         endDate: null,
-        date: data.date,
+        date: date,
         status: FetchStatus.IN_PROGRESS,
-        fetcherConfig: data.fetcherConfig,
+        fetcherConfig: fetcherConfig,
         data: null,
     });
 };

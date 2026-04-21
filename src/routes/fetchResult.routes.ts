@@ -8,7 +8,6 @@ import {
 import {
     validateExistingFetchResult,
     validateFetchResultId,
-    validateExistingFetchResultBeforeGeneration,
 } from '../middlewares/fetchResult.validator.js';
 
 export const fetchResultRoutes = Router();
@@ -18,7 +17,6 @@ fetchResultRoutes.post(
     validateFetcherFetchBody,
     validateFetcherId,
     validateFetcherConfig,
-    validateExistingFetchResultBeforeGeneration,
     fetchResultController.generateFetchResult,
 );
 fetchResultRoutes.get(
