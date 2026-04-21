@@ -53,11 +53,13 @@ export const validateFetcher = async (
         };
     }
     let fetcherIssues: ZodError['issues'] = [];
-    try {
-        fetcher.fetcherConfigSchema.parse(fetcherConfig);
-    } catch (error) {
-        if (error instanceof ZodError) {
-            fetcherIssues = error.issues;
+    if (fetcherConfig) {
+        try {
+            fetcher.fetcherConfigSchema.parse(fetcherConfig);
+        } catch (error) {
+            if (error instanceof ZodError) {
+                fetcherIssues = error.issues;
+            }
         }
     }
     if (fetcherIssues.length > 0) {

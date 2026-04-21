@@ -14,6 +14,12 @@ export const FT_REST_GITHUB_COMMITS: IFetcher = {
         repository: z.string(),
     }),
     fetch: async (_fetchConfig) => {
-        return { data: 'This is a placeholder for GitHub fetcher data' };
+        return {
+            data: [
+                'This is a placeholder for GitHub fetcher data',
+                'Another placeholder item',
+                'Yet another placeholder item',
+            ],
+        };
     },
 };
