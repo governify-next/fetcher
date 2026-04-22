@@ -2,33 +2,25 @@ import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
 import { githubGraphQL } from '../../utils/github.graphql.util.js';
 
-interface GithubProject {
-    id: string;
-}
-
-interface ProjectItemsPage {
-    pageInfo: { hasNextPage: boolean; endCursor: string | null };
-    nodes: unknown[];
-}
-
+// Graphql no permite actualmente traer más de 100 items por proyecto sin anidar
+// Por tanto, no podemos dejar una sola query para traer directamente los items
 const getProjects = async (
     owner: string,
     repository: string,
     token: string,
-): Promise<GithubProject[]> => {
+): Promise<{ id: string }[]> => {
     const query = `
     query {
       repository(owner: "${owner}", name: "${repository}") {
         projectsV2(first: 10) {
           nodes {
             id
-            title
           }
         }
       }
     }`;
     const data = (await githubGraphQL(query, token)) as {
-        repository: { projectsV2: { nodes: GithubProject[] } };
+        repository: { projectsV2: { nodes: { id: string }[] } };
     };
     return data.repository.projectsV2.nodes;
 };
@@ -70,7 +62,6 @@ const getProjectItems = async (projectId: string, token: string): Promise<unknow
                       assignees(first: 10) {
                         nodes {
                           login
-                          name
                         }
                       }
                       linkedBranches(first: 10) {
@@ -95,7 +86,12 @@ const getProjectItems = async (projectId: string, token: string): Promise<unknow
           }
         }`;
         const data = (await githubGraphQL(query, token)) as {
-            node: { items: ProjectItemsPage };
+            node: {
+                items: {
+                    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+                    nodes: unknown[];
+                };
+            };
         };
         const page = data.node.items;
         items.push(...page.nodes);
