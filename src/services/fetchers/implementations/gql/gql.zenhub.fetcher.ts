@@ -1,28 +1,14 @@
 import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
 import { getHeaders } from '../../utils/auth.headers.util.js';
+import {
+    IPipeline,
+    IWorkspaceRaw,
+    IZenhubData,
+    IZenhubIssue,
+} from '../../../../types/fetchers/gql.zenhub.fetcher.js';
 
 const ZENHUB_GRAPHQL_URL = 'https://api.zenhub.com/public/graphql';
-
-// Tipos internos
-
-type IZenhubIssue = { pullRequest?: boolean };
-
-type IPipeline = {
-    name: string;
-    issues: IZenhubIssue[];
-};
-
-type IZenhubData = {
-    pipelines: IPipeline[];
-    closedIssues: IZenhubIssue[];
-};
-
-type IWorkspaceRaw = {
-    pipelinesConnection: {
-        nodes: Array<{ id: string; name: string }>;
-    };
-};
 
 // Llamada a la API de Zenhub
 
