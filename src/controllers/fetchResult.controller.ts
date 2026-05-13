@@ -7,22 +7,7 @@ export const generateFetchResult = async (req: Request, res: Response, next: Nex
     try {
         const { fetcherId } = req.params;
         const { date, fetcherConfig } = req.body;
-        const existingFetchResult =
-            await fetchResultService.getFetchResultsByFetcherIdAndFetchResultBody(
-                fetcherId,
-                date,
-                fetcherConfig,
-            );
 
-        if (existingFetchResult.length > 0) {
-            return sendSuccess(res, {
-                data: existingFetchResult[0],
-                message:
-                    'A fetch result already exists for the provided fetcherId, fetch date and fetcher configuration. Returning existing result',
-                httpStatus: 200,
-                appCode: 'DUPLICATE_KEY',
-            });
-        }
         const isAsync = req.query.isAsync === 'true';
         const fetchResult = await fetchResultService.generateFetchResult(
             isAsync,

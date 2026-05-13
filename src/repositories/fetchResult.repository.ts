@@ -1,27 +1,38 @@
 import { IFetchResult, getFetcherResultsModel } from '../models/fetchResult.model.js';
 
-export const createFetchResultByFetcherId = async (
+export const claimFetchResultByFetcherId = async (
     fetcherId: string,
-    fetchResultData: Partial<IFetchResult>,
+    fetcherResultData: Partial<IFetchResult>,
 ) => {
-    const FetcherResultModel = getFetcherResultsModel(fetcherId);
-    const fetchResult = new FetcherResultModel(fetchResultData);
-    return await fetchResult.save();
+    const FetchResultModel = getFetcherResultsModel(fetcherId);
+    try {
+        const fetchResult = new FetchResultModel(fetcherResultData);
+        const createdFetchResult = await fetchResult.save();
+
+        return {
+            claimedFetchResult: createdFetchResult,
+            shouldFetch: true,
+        };
+    } catch (error) {
+        // Cualquier error que no sea de duplicación se devuelve para el controlador
+        if ((error as { code?: number }).code !== 11000) {
+            throw error;
+        }
+        // Ya existe el fetchResult en BD, buscar y devolver
+        const existingFetchResult = await FetchResultModel.findOne({
+            date: fetcherResultData.date,
+            fetcherConfig: fetcherResultData.fetcherConfig,
+        });
+
+        return {
+            claimedFetchResult: existingFetchResult,
+            shouldFetch: false,
+        };
+    }
 };
 
 export const getFetchResultsByFetcherId = async (fetcherId: string) => {
     return await getFetcherResultsModel(fetcherId).find();
-};
-
-export const getFetchResultsByFetchResultBody = async (
-    fetcherId: string,
-    date: Date,
-    fetcherConfig: Record<string, unknown>,
-) => {
-    return await getFetcherResultsModel(fetcherId).find({
-        date,
-        fetcherConfig,
-    });
 };
 
 export const deleteFetchResultsByFetcherId = async (fetcherId: string) => {

@@ -22,6 +22,8 @@ const FetchResultSchema: Schema<IFetchResult> = new Schema(
     { timestamps: true },
 );
 
+FetchResultSchema.index({ date: 1, fetcherConfig: 1 }, { unique: true });
+
 const FETCH_RESULT_COLLECTION_PREFIX = 'fetchresults';
 const FETCH_RESULT_MODEL_PREFIX = 'FetchResult';
 
