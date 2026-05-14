@@ -1,9 +1,9 @@
 openapi: 3.0.0
 info:
-    title: Collector API
+    title: Fetcher API
     version: 1.0.0
     description: |
-        REST API for managing fetchers within Collector API.
+        REST API for managing fetchers within Fetcher API.
 servers:
     - url: /
 
