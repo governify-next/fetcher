@@ -1,13 +1,26 @@
 openapi: 3.0.0
 info:
-    title: Express API Boilerplatesss
+    title: Fetcher API
     version: 1.0.0
-    description: A simple Express API with TypeScript
+    description: |
+        REST API for managing fetchers within Fetcher API.
 servers:
     - url: /
+
+tags:
+    - { name: Health, description: Server health check }
+    - { name: Fetchers, description: Fetcher management and execution }
+    - { name: Fetch Results, description: Fetch result generation and management }
+security:
+    - BearerAuth: []
+
 paths:
+    # ──────────────────────────────────────────────
+    # Health
+    # ──────────────────────────────────────────────
     /health:
         get:
+            security: []
             tags:
                 - Health
             summary: Health check
@@ -21,205 +34,780 @@ paths:
                                 properties:
                                     status:
                                         type: string
-    /api/v1/users:
+                                    message:
+                                        type: string
+
+    # ──────────────────────────────────────────────
+    # Fetchers
+    # ──────────────────────────────────────────────
+    /api/v1/fetchers:
         get:
             tags:
-                - Users
-            summary: List all users
+                - Fetchers
+            summary: Get all fetchers
+            operationId: getFetchers
+            description: Retrieves all available fetchers and their metadata.
             responses:
                 '200':
-                    description: A list of users
+                    description: Fetchers retrieved successfully.
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    data:
-                                        type: array
-                                        items:
-                                            $ref: '#/components/schemas/User'
-                                    message:
-                                        type: string
-                                    success:
-                                        type: boolean
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              type: array
+                                              items:
+                                                  $ref: '#/components/schemas/Fetcher'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchers/{fetcherId}:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
+        get:
+            tags:
+                - Fetchers
+            summary: Get fetcher by ID
+            operationId: getFetcherById
+            description: Retrieves the details of a specific fetcher by its ID.
+            responses:
+                '200':
+                    description: Fetcher retrieved successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/Fetcher'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchers/{fetcherId}/fetch:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
         post:
             tags:
-                - Users
-            summary: Create a new user
+                - Fetchers
+            summary: Execute a fetcher
+            operationId: fetchFetcher
+            description: Executes the selected fetcher using the provided fetcher and audit configurations.
             requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UserInput'
+                $ref: '#/components/requestBodies/FetchFetcherBody'
             responses:
-                '201':
-                    description: User created
+                '200':
+                    description: Fetcher result generated successfully.
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    data:
-                                        $ref: '#/components/schemas/User'
-                                    message:
-                                        type: string
-                                    success:
-                                        type: boolean
-                '409':
-                    description: Email already exists
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetcherExecutionResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '404':
+                    $ref: '#/components/responses/NotFound'
                 '500':
-                    description: Internal server error
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchers/{fetcherId}/validate:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
+        post:
+            tags:
+                - Fetchers
+            summary: Validate fetcher configuration
+            operationId: validateFetcher
+            description: Validates fetcher and audit configuration payloads against the fetcher's schema.
+            requestBody:
+                $ref: '#/components/requestBodies/ValidateFetcherBody'
+            responses:
+                '200':
+                    description: Fetcher configuration validation completed (valid or invalid).
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Error'
-    /api/v1/users/{id}:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/ValidateFetcherResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    # ──────────────────────────────────────────────
+    # Fetch Results
+    # ──────────────────────────────────────────────
+    /api/v1/fetchers/{fetcherId}/fetchResults/generate:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
+            - $ref: '#/components/parameters/isAsync'
+        post:
+            tags:
+                - Fetch Results
+            summary: Generate a fetch result
+            operationId: generateFetchResult
+            description: Creates a fetch result and optionally executes fetch generation asynchronously.
+            requestBody:
+                $ref: '#/components/requestBodies/GenerateFetchResultBody'
+            responses:
+                '200':
+                    description: Fetch result created successfully (or existing duplicated result returned).
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '422':
+                    $ref: '#/components/responses/ComputationError'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchers/{fetcherId}/fetchResults:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
         get:
             tags:
-                - Users
-            summary: Get user by ID
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: User ID (Mongo ObjectId)
+                - Fetch Results
+            summary: Get fetch results by fetcher ID
+            operationId: getFetchResultsByFetcherId
+            description: Retrieves all fetch results associated with a given fetcher.
             responses:
                 '200':
-                    description: User found
+                    description: Fetch results retrieved successfully.
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    data:
-                                        $ref: '#/components/schemas/User'
-                                    message:
-                                        type: string
-                                    success:
-                                        type: boolean
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              type: array
+                                              items:
+                                                  $ref: '#/components/schemas/FetchResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
-                    description: User not found
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-        put:
-            tags:
-                - Users
-            summary: Update user by ID
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: User ID (Mongo ObjectId)
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UserInput'
-            responses:
-                '200':
-                    description: User updated
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    data:
-                                        $ref: '#/components/schemas/User'
-                                    message:
-                                        type: string
-                                    success:
-                                        type: boolean
-                '404':
-                    description: User not found
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
         delete:
             tags:
-                - Users
-            summary: Delete user by ID
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: User ID (Mongo ObjectId)
+                - Fetch Results
+            summary: Delete fetch results by fetcher ID
+            operationId: deleteFetchResultsByFetcherId
+            description: Deletes all fetch results associated with a given fetcher.
             responses:
                 '200':
-                    description: User deleted
+                    description: Fetch results deleted successfully.
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    data:
-                                        type: 'null'
-                                    message:
-                                        type: string
-                                    success:
-                                        type: boolean
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/DeleteManyResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
                 '404':
-                    description: User not found
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /api/v1/fetchers/{fetcherId}/fetchResults/{fetchResultId}:
+        parameters:
+            - $ref: '#/components/parameters/fetcherId'
+            - $ref: '#/components/parameters/fetchResultId'
+        get:
+            tags:
+                - Fetch Results
+            summary: Get fetch result by fetcher ID and fetch result ID
+            operationId: getFetchResultByFetcherIdAndFetchResultId
+            description: Retrieves a single fetch result by fetcher ID and fetch result ID.
+            responses:
+                '200':
+                    description: Fetch result retrieved successfully.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Error'
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        put:
+            tags:
+                - Fetch Results
+            summary: Update fetch result by fetcher ID and fetch result ID
+            operationId: updateFetchResultByFetcherIdAndFetchResultId
+            description: Updates a fetch result by fetcher ID and fetch result ID.
+            requestBody:
+                $ref: '#/components/requestBodies/UpdateFetchResultBody'
+            responses:
+                '200':
+                    description: Fetch result updated successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+        delete:
+            tags:
+                - Fetch Results
+            summary: Delete fetch result by fetcher ID and fetch result ID
+            operationId: deleteFetchResultByFetcherIdAndFetchResultId
+            description: Deletes a fetch result by fetcher ID and fetch result ID.
+            responses:
+                '200':
+                    description: Fetch result deleted successfully.
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/SuccessResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/FetchResult'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '400':
+                    $ref: '#/components/responses/ValidationError'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '500':
+                    $ref: '#/components/responses/InternalError'
 
 components:
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: JWT token required when AUTHENTICATION_ENABLED=true.
+
+    # ── Parameters ────────────────────────────
+    parameters:
+        fetcherId:
+            name: fetcherId
+            in: path
+            required: true
+            description: ID of the fetcher
+            schema:
+                type: string
+                example: FT_REST_GITHUB_COMMITS
+        fetchResultId:
+            name: fetchResultId
+            in: path
+            required: true
+            description: Fetch result identifier
+            schema:
+                type: string
+                example: 67c9ff7b2ddf1b3940f9f321
+        isAsync:
+            name: isAsync
+            in: query
+            required: false
+            description: If true, creates the fetch result and executes processing in background.
+            schema:
+                type: boolean
+                default: false
+                example: false
+
+    # ── Request Bodies ────────────────────────
+    requestBodies:
+        FetchFetcherBody:
+            description: Request body for executing a fetcher
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            date:
+                                type: string
+                                format: date-time
+                                description: Fetch date used to initialize the fetch result
+                                example: '2026-04-10T09:30:00.000Z'
+                            fetcherConfig:
+                                $ref: '#/components/schemas/FetcherConfig'
+                        required:
+                            - date
+                            - fetcherConfig
+                    example:
+                        date: '2026-04-10T09:30:00.000Z'
+                        fetcherConfig:
+                            owner: governify
+                            repository: collector
+        ValidateFetcherBody:
+            description: Request body for validating fetcher configuration
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            fetcherConfig:
+                                $ref: '#/components/schemas/FetcherConfig'
+                    example:
+                        fetcherConfig:
+                            owner: governify
+                            repository: collector
+
+        GenerateFetchResultBody:
+            description: Request body for generating a fetch result
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            date:
+                                type: string
+                                format: date-time
+                                description: Fetch date used to initialize the fetch result
+                                example: '2026-04-10T09:30:00.000Z'
+                            fetcherConfig:
+                                $ref: '#/components/schemas/FetcherConfig'
+                        required:
+                            - date
+                            - fetcherConfig
+                    example:
+                        date: '2026-04-10T09:30:00.000Z'
+                        fetcherConfig:
+                            owner: governify
+                            repository: collector
+
+        UpdateFetchResultBody:
+            description: Request body for updating a fetch result
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/UpdateFetchResultRequest'
+                    example:
+                        status: COMPLETED
+                        startDate: '2026-04-06T10:59:55.000Z'
+                        date: '2026-04-06T11:00:00.000Z'
+                        endDate: '2026-04-06T11:00:00.000Z'
+                        data: This is a placeholder for GitHub fetcher data
+
+    # ── Reusable responses ────────────────────────
+    responses:
+        Unauthorized:
+            description: Unauthorized request (missing/malformed Authorization header or invalid/expired token)
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Authorization header missing or malformed
+                        httpStatus: 401
+                        appCode: UNAUTHORIZED
+                        data: null
+                        error:
+                            message: Authorization header missing or malformed
+                            details: null
+
+        ValidationError:
+            description: Validation error in the submitted data
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Validation failed
+                        httpStatus: 400
+                        appCode: VALIDATION_ERROR
+                        data: null
+                        error:
+                            message: Validation failed
+                            details:
+                                - type: field
+                                  value: null
+                                  msg: fetcherConfig is required
+                                  path: fetcherConfig
+                                  location: body
+
+        NotFound:
+            description: The requested resource does not exist
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Resource not found
+                        httpStatus: 404
+                        appCode: NOT_FOUND
+                        data: null
+                        error:
+                            message: Resource not found
+                            details: null
+
+        ComputationError:
+            description: Error while generating the fetch result data
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Failed to generate fetch result
+                        httpStatus: 422
+                        appCode: COMPUTATION_ERROR
+                        data: null
+                        error:
+                            message: Failed to generate fetch result
+                            details: null
+
+        InternalError:
+            description: Internal server error
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Internal server error
+                        httpStatus: 500
+                        appCode: UNKNOWN_ERROR
+                        data: null
+                        error:
+                            message: Internal server error
+                            details: null
+
     schemas:
-        User:
+        # ── Standard response ────────────────────
+        SuccessResponse:
             type: object
+            description: Standard wrapper for all successful API responses
+            properties:
+                success:
+                    type: boolean
+                    example: true
+                message:
+                    type: string
+                    example: OK
+                httpStatus:
+                    type: integer
+                    example: 200
+                appCode:
+                    type: string
+                    example: SUCCESS
+                data:
+                    description: Response payload
+                    nullable: true
+                    oneOf:
+                        - type: object
+                        - type: array
+                        - type: string
+                        - type: number
+                        - type: boolean
+                error:
+                    type: object
+                    nullable: true
+                    example: null
             required:
-                - _id
-                - name
-                - email
+                - success
+                - message
+                - httpStatus
+                - appCode
+                - data
+                - error
+
+        ErrorResponse:
+            type: object
+            description: Standard wrapper for all error API responses
+            properties:
+                success:
+                    type: boolean
+                    example: false
+                message:
+                    type: string
+                httpStatus:
+                    type: integer
+                appCode:
+                    type: string
+                data:
+                    type: object
+                    nullable: true
+                    example: null
+                error:
+                    type: object
+                    properties:
+                        message:
+                            type: string
+                        details:
+                            description: Additional error information (may be null)
+                            oneOf:
+                                - type: object
+                                - type: array
+                                - type: string
+                                - type: number
+                                - type: boolean
+                            nullable: true
+            required:
+                - success
+                - message
+                - httpStatus
+                - appCode
+                - data
+                - error
+
+        # ── Fetcher ─────────────────────────
+        Fetcher:
+            type: object
+            description: Fetcher definition and metadata
+            properties:
+                id:
+                    type: string
+                    example: FT_REST_GITHUB_COMMITS
+                moreInfo:
+                    $ref: '#/components/schemas/FetcherMoreInfo'
+                fetcherConfigSchema:
+                    type: object
+                    description: Zod schema definition serialized as object
+                    example:
+                        type: object
+                        properties:
+                            owner:
+                                type: string
+                            repository:
+                                type: string
+                        required:
+                            - owner
+                            - repository
+                fetchScript:
+                    type: string
+                    example: |
+                        async (_fetcherConfig) => {
+                          return { data: 'This is a placeholder for GitHub fetcher data' };
+                        }
+            required:
+                - id
+                - type
+                - moreInfo
+
+        FetcherMoreInfo:
+            type: object
+            description: Human-readable fetcher metadata
+            properties:
+                title:
+                    type: string
+                    example: GitHub Fetcher
+                description:
+                    type: string
+                    example: Fetches data from GitHub repositories, including commits, issues, and pull requests.
+                example:
+                    type: string
+                    example: ''
+            required:
+                - title
+                - description
+                - example
+
+        FetcherConfig:
+            type: object
+            description: Fetcher-specific configuration object (shape depends on fetcherId)
+            additionalProperties: true
+            example:
+                owner: governify
+                repository: collector
+
+        FetcherExecutionResult:
+            type: object
+            description: Result returned by a fetcher execution
+            properties:
+                data:
+                    description: Fetcher output payload
+                    oneOf:
+                        - type: string
+                        - type: object
+                        - type: array
+            required:
+                - data
+            example:
+                data: This is a placeholder for GitHub fetcher data
+
+        ValidateFetcherIssue:
+            type: object
+            description: Validation issue returned by zod when config is invalid
+            properties:
+                code:
+                    type: string
+                    example: invalid_type
+                expected:
+                    type: string
+                    example: string
+                path:
+                    type: array
+                    items:
+                        oneOf:
+                            - type: string
+                            - type: integer
+                    example:
+                        - owner
+                message:
+                    type: string
+                    example: 'Invalid input: expected string, received undefined'
+                source:
+                    type: string
+                    enum: [fetcherConfig]
+                    example: fetcherConfig
+
+        ValidateFetcherResult:
+            type: object
+            description: Result of validating fetcher and audit configuration payloads
+            properties:
+                valid:
+                    type: boolean
+                    example: true
+                error:
+                    type: string
+                    nullable: true
+                    example: Invalid fetcherConfig
+                issues:
+                    type: array
+                    nullable: true
+                    items:
+                        $ref: '#/components/schemas/ValidateFetcherIssue'
+            required:
+                - valid
+
+        FetchResult:
+            type: object
+            description: Fetch result entity persisted in MongoDB
             properties:
                 _id:
                     type: string
-                    description: MongoDB ObjectId
-                name:
+                    example: 67c9ff7b2ddf1b3940f9f321
+                startDate:
                     type: string
-                email:
+                    format: date-time
+                    example: '2026-04-06T10:59:55.000Z'
+                endDate:
                     type: string
-                password:
+                    format: date-time
+                    nullable: true
+                    example: '2026-04-06T11:00:00.000Z'
+                date:
                     type: string
+                    format: date-time
+                    nullable: true
+                    example: '2026-04-06T11:00:00.000Z'
+                status:
+                    type: string
+                    enum: [IN_PROGRESS, COMPLETED, FAILED]
+                    example: COMPLETED
+                fetcherConfig:
+                    $ref: '#/components/schemas/FetcherConfig'
+                data:
+                    nullable: true
+                    oneOf:
+                        - type: string
+                        - type: object
+                        - type: array
+                    example: This is a placeholder for GitHub fetcher data
                 createdAt:
                     type: string
                     format: date-time
+                    example: '2026-04-06T10:59:55.000Z'
                 updatedAt:
                     type: string
                     format: date-time
-        UserInput:
+                    example: '2026-04-06T11:00:00.000Z'
+
+        UpdateFetchResultRequest:
             type: object
+            description: Partial payload for updating a fetch result
+            properties:
+                startDate:
+                    type: string
+                    format: date-time
+                endDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                date:
+                    type: string
+                    format: date-time
+                    nullable: true
+                status:
+                    type: string
+                    enum: [IN_PROGRESS, COMPLETED, FAILED]
+                fetcherConfig:
+                    $ref: '#/components/schemas/FetcherConfig'
+                data:
+                    nullable: true
+                    oneOf:
+                        - type: string
+                        - type: object
+                        - type: array
+
+        DeleteManyResult:
+            type: object
+            description: MongoDB delete many operation result
+            properties:
+                acknowledged:
+                    type: boolean
+                    example: true
+                deletedCount:
+                    type: integer
+                    example: 3
             required:
-                - name
-                - email
-                - password
-            properties:
-                name:
-                    type: string
-                email:
-                    type: string
-                password:
-                    type: string
-        Error:
-            type: object
-            properties:
-                error:
-                    type: string
-                message:
-                    type: string
+                - acknowledged
+                - deletedCount
