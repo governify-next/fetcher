@@ -2,27 +2,24 @@
 
 ## [1.1.0](https://github.com/governify-next/fetcher/compare/v1.0.0...v1.1.0) (2026-09-14)
 
-
 ### Features
 
-* add ProjectV2 items historical fetcher ([e05d96e](https://github.com/governify-next/fetcher/commit/e05d96e6b625dbfde2199b6e62a5d40c3177049c))
-* enhance fetcher functionality with temporal context support ([39f6e16](https://github.com/governify-next/fetcher/commit/39f6e16e10fb632ce95506b498388a55656c5d73))
-* enhance GitHub fetchers for historical information ([6f01b36](https://github.com/governify-next/fetcher/commit/6f01b36d4200bf3070d2cdad67c1fcdf21930696))
-* integrate authenticator service and update authentication middl… ([b2d4420](https://github.com/governify-next/fetcher/commit/b2d4420822af805d58c7fc61537a422ba309080a))
-* integrate authenticator service and update authentication middleware ([e7bbc7e](https://github.com/governify-next/fetcher/commit/e7bbc7e12c006ba17eb449cbfe9433eca2c2e9ba))
-* propagar fallo de fetch ([29f648c](https://github.com/governify-next/fetcher/commit/29f648c3c5fcc1674e7179ded1fe7bc399778769))
-
+- add ProjectV2 items historical fetcher ([e05d96e](https://github.com/governify-next/fetcher/commit/e05d96e6b625dbfde2199b6e62a5d40c3177049c))
+- enhance fetcher functionality with temporal context support ([39f6e16](https://github.com/governify-next/fetcher/commit/39f6e16e10fb632ce95506b498388a55656c5d73))
+- enhance GitHub fetchers for historical information ([6f01b36](https://github.com/governify-next/fetcher/commit/6f01b36d4200bf3070d2cdad67c1fcdf21930696))
+- integrate authenticator service and update authentication middl… ([b2d4420](https://github.com/governify-next/fetcher/commit/b2d4420822af805d58c7fc61537a422ba309080a))
+- integrate authenticator service and update authentication middleware ([e7bbc7e](https://github.com/governify-next/fetcher/commit/e7bbc7e12c006ba17eb449cbfe9433eca2c2e9ba))
+- propagar fallo de fetch ([29f648c](https://github.com/governify-next/fetcher/commit/29f648c3c5fcc1674e7179ded1fe7bc399778769))
 
 ### Bug Fixes
 
-* catch async error y separación fetch de mongo op ([2c67f67](https://github.com/governify-next/fetcher/commit/2c67f67c331c9f3cb2fa071c39c309de7c220409))
-* trigger ([44cf56f](https://github.com/governify-next/fetcher/commit/44cf56f4c771ffc8dabc02d6f6c5e6dc670c3a06))
-
+- catch async error y separación fetch de mongo op ([2c67f67](https://github.com/governify-next/fetcher/commit/2c67f67c331c9f3cb2fa071c39c309de7c220409))
+- trigger ([44cf56f](https://github.com/governify-next/fetcher/commit/44cf56f4c771ffc8dabc02d6f6c5e6dc670c3a06))
 
 ### Miscellaneous Chores
 
-* prepare v1.1.0 release ([593829d](https://github.com/governify-next/fetcher/commit/593829d16ba91c5983a64ef0e3bcabb98c8b5340))
-* release 1.1.0 ([72ca19f](https://github.com/governify-next/fetcher/commit/72ca19ff97d7102fbfb1f94a6b28d5a2e836acaa))
+- prepare v1.1.0 release ([593829d](https://github.com/governify-next/fetcher/commit/593829d16ba91c5983a64ef0e3bcabb98c8b5340))
+- release 1.1.0 ([72ca19f](https://github.com/governify-next/fetcher/commit/72ca19ff97d7102fbfb1f94a6b28d5a2e836acaa))
 
 ## 1.0.0 (2026-05-14)
 
