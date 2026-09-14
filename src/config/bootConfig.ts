@@ -24,4 +24,8 @@ export const bootEnv = {
     JWT_SECRET: process.env.JWT_SECRET || 'governify_next_secret_key',
     JWT_ISSUER: process.env.JWT_ISSUER || 'authenticator',
     JWT_AUDIENCE: process.env.JWT_AUDIENCE || 'governify-next',
+
+    // Github app config
+    GITHUB_APP_ID: process.env.GITHUB_APP_ID || '',
+    GITHUB_APP_PRIVATE_KEY: (process.env.GITHUB_APP_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
 };
