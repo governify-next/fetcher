@@ -1,12 +1,17 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { FetchStatus } from '../types/fetchStatus.js';
+import { FetchStatus, FetchUnavailabilityReason } from '../types/fetchStatus.js';
+import { TemporalCapability, TemporalMode } from '../types/temporal.js';
 
 export interface IFetchResult extends Document {
     startDate: Date;
     endDate: Date | null;
-    date: Date;
+    effectiveAt: Date;
     status: FetchStatus;
+    unavailableReason: FetchUnavailabilityReason | null;
+    temporalCapability: TemporalCapability;
+    acquisitionMode: TemporalMode;
     fetcherConfig: Record<string, unknown>;
+    configHash: string;
     data: unknown | null;
 }
 
@@ -14,13 +19,31 @@ const FetchResultSchema: Schema<IFetchResult> = new Schema(
     {
         startDate: { type: Date, required: true },
         endDate: { type: Date, default: null },
-        date: { type: Date, required: true },
+        effectiveAt: { type: Date, required: true },
         status: { type: String, enum: Object.values(FetchStatus), required: true },
+        unavailableReason: {
+            type: String,
+            enum: Object.values(FetchUnavailabilityReason),
+            default: null,
+        },
+        temporalCapability: {
+            type: String,
+            enum: Object.values(TemporalCapability),
+            required: true,
+        },
+        acquisitionMode: {
+            type: String,
+            enum: Object.values(TemporalMode),
+            required: true,
+        },
         fetcherConfig: { type: Schema.Types.Mixed, required: true },
+        configHash: { type: String, required: true },
         data: { type: Schema.Types.Mixed, default: null },
     },
     { timestamps: true },
 );
+
+FetchResultSchema.index({ effectiveAt: 1, configHash: 1 }, { unique: true });
 
 const FETCH_RESULT_COLLECTION_PREFIX = 'fetchresults';
 const FETCH_RESULT_MODEL_PREFIX = 'FetchResult';

@@ -1,18 +1,24 @@
 import { ZodError } from 'zod';
 import { IFetcher } from '../../types/fetcher.js';
+import { ITemporalContext, TemporalCapability, TemporalMode } from '../../types/temporal.js';
+import { ValidationError } from '../../utils/customErrors.js';
 
 import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/rest.bluejay.fetcher.js';
-import { FT_GQL_GITHUB_PROJECTV2_ITEMS } from './implementations/gql/gql.github.projectv2Items.fetcher.js';
 import { FT_GQL_GITHUB_PULL_REQUESTS } from './implementations/gql/gql.github.pullRequests.fetcher.js';
 import { FT_GQL_GITHUB_ISSUES } from './implementations/gql/gql.github.issues.fetcher.js';
 import { FT_GQL_ZENHUB_ISSUES } from './implementations/gql/gql.zenhub.fetcher.js';
+import {
+    FT_GQL_GITHUB_PROJECTV2_ITEMS_BASIC,
+    FT_GQL_GITHUB_PROJECTV2_ITEMS,
+} from './implementations/gql/gql.github.projectv2Items.fetcher.js';
 
 export const fetchers: Record<string, IFetcher> = {
     FT_REST_BLUEJAY_REPORTER_LOGS,
-    FT_GQL_GITHUB_PROJECTV2_ITEMS,
     FT_GQL_GITHUB_PULL_REQUESTS,
     FT_GQL_GITHUB_ISSUES,
     FT_GQL_ZENHUB_ISSUES,
+    FT_GQL_GITHUB_PROJECTV2_ITEMS_BASIC,
+    FT_GQL_GITHUB_PROJECTV2_ITEMS,
 };
 
 const injectFetchScriptStringToMetric = (
@@ -38,9 +44,16 @@ export const getFetchers = (): IFetcher[] => {
 export const fetchFetcher = async (
     id: string,
     fetcherConfig: Record<string, unknown>,
+    temporalContext: ITemporalContext,
 ): Promise<{ data: unknown }> => {
     const fetcher = getFetcherById(id);
-    return fetcher.fetch(fetcherConfig);
+    if (
+        fetcher.temporalCapability === TemporalCapability.SNAPSHOT &&
+        temporalContext.mode === TemporalMode.REPLAY
+    ) {
+        throw new ValidationError(`Snapshot fetcher ${id} cannot be executed during a replay`);
+    }
+    return fetcher.fetch(fetcherConfig, temporalContext.effectiveAt);
 };
 
 export const validateFetcher = async (

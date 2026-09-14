@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
+import { TemporalCapability } from '../../../../types/temporal.js';
 import { getHeaders } from '../../utils/auth.headers.util.js';
 import {
     IPipeline,
@@ -163,6 +164,7 @@ const getClosedIssues = async (
 
 export const FT_GQL_ZENHUB_ISSUES: IFetcher = {
     id: 'FT_GQL_ZENHUB_ISSUES',
+    temporalCapability: TemporalCapability.SNAPSHOT,
     moreInfo: {
         title: 'ZenHub Issues Fetcher',
         description:

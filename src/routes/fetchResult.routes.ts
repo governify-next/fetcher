@@ -9,11 +9,21 @@ import {
     validateExistingFetchResult,
     validateFetchResultId,
 } from '../middlewares/fetchResult.validator.js';
+import { anyOf } from '../middlewares/anyof.validator.js';
+import { SystemRole } from '../types/systemRole.js';
+import {
+    hasSystemRole,
+    checkUserAuthentication,
+    checkServiceAuthentication,
+    isService,
+} from '../middlewares/authenticator.validator.js';
 
 export const fetchResultRoutes = Router();
 
 fetchResultRoutes.post(
     '/fetchers/:fetcherId/fetchResults/generate',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherFetchBody,
     validateFetcherId,
     validateFetcherConfig,
@@ -21,16 +31,22 @@ fetchResultRoutes.post(
 );
 fetchResultRoutes.get(
     '/fetchers/:fetcherId/fetchResults',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherId,
     fetchResultController.getFetchResultsByFetcherId,
 );
 fetchResultRoutes.delete(
     '/fetchers/:fetcherId/fetchResults',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherId,
     fetchResultController.deleteFetchResultsByFetcherId,
 );
 fetchResultRoutes.get(
     '/fetchers/:fetcherId/fetchResults/:fetchResultId',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherId,
     validateFetchResultId,
     validateExistingFetchResult,
@@ -38,6 +54,8 @@ fetchResultRoutes.get(
 );
 fetchResultRoutes.put(
     '/fetchers/:fetcherId/fetchResults/:fetchResultId',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherId,
     validateFetchResultId,
     validateExistingFetchResult,
@@ -45,6 +63,8 @@ fetchResultRoutes.put(
 );
 fetchResultRoutes.delete(
     '/fetchers/:fetcherId/fetchResults/:fetchResultId',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherId,
     validateFetchResultId,
     validateExistingFetchResult,

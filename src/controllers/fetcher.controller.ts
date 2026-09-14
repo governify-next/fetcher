@@ -1,12 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendSuccess } from '../utils/standardResponse.js';
 import * as fetcherService from '../services/fetchers/fetcher.service.js';
+import { TemporalMode } from '../types/temporal.js';
 
 export const fetchFetcher = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { fetcherId } = req.params;
-        const { fetcherConfig } = req.body;
-        const fetchResult = await fetcherService.fetchFetcher(fetcherId, fetcherConfig);
+        const { temporalContext, fetcherConfig } = req.body;
+        const fetchResult = await fetcherService.fetchFetcher(fetcherId, fetcherConfig, {
+            effectiveAt: new Date(temporalContext.effectiveAt),
+            mode: temporalContext.mode as TemporalMode,
+        });
         return sendSuccess(res, { data: fetchResult, message: 'Fetcher result generated' });
     } catch (err) {
         next(err);

@@ -6,13 +6,33 @@ import {
     validateFetcherFetchBody,
 } from '../middlewares/fetcher.validator.js';
 import * as fetcherController from '../controllers/fetcher.controller.js';
+import { anyOf } from '../middlewares/anyof.validator.js';
+import { SystemRole } from '../types/systemRole.js';
+import {
+    hasSystemRole,
+    checkUserAuthentication,
+    checkServiceAuthentication,
+    isService,
+} from '../middlewares/authenticator.validator.js';
 
 export const fetcherRoutes = Router();
 
-fetcherRoutes.get('/fetchers', fetcherController.getFetchers);
-fetcherRoutes.get('/fetchers/:fetcherId', validateFetcherId, fetcherController.getFetcherById);
+fetcherRoutes.get(
+    '/fetchers',
+    checkUserAuthentication,
+    hasSystemRole(SystemRole.ADMIN),
+    fetcherController.getFetchers,
+);
+fetcherRoutes.get(
+    '/fetchers/:fetcherId',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    validateFetcherId,
+    fetcherController.getFetcherById,
+);
 fetcherRoutes.post(
     '/fetchers/:fetcherId/fetch',
+    checkUserAuthentication,
+    hasSystemRole(SystemRole.SUPERADMIN),
     validateFetcherFetchBody,
     validateFetcherId,
     validateFetcherConfig,
@@ -20,6 +40,8 @@ fetcherRoutes.post(
 );
 fetcherRoutes.post(
     '/fetchers/:fetcherId/validate',
+    anyOf(checkUserAuthentication, checkServiceAuthentication),
+    anyOf(hasSystemRole(SystemRole.SUPERADMIN), isService),
     validateFetcherValidation,
     fetcherController.validateFetcher,
 );

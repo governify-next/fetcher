@@ -44,11 +44,17 @@ export const validateFetcherConfig = async (req: Request, res: Response, next: N
     }
 };
 
-const dateRequiredValidation = body('date')
+const effectiveAtRequiredValidation = body('temporalContext.effectiveAt')
     .exists({ checkNull: true })
-    .withMessage('date is required')
+    .withMessage('temporalContext.effectiveAt is required')
     .isISO8601()
-    .withMessage('date must be a valid ISO 8601 date');
+    .withMessage('temporalContext.effectiveAt must be a valid ISO 8601 date');
+
+const temporalModeRequiredValidation = body('temporalContext.mode')
+    .exists({ checkNull: true })
+    .withMessage('temporalContext.mode is required')
+    .isIn(['CAPTURE', 'REPLAY'])
+    .withMessage('temporalContext.mode must be CAPTURE or REPLAY');
 
 const fetcherConfigOptionalValidation = body('fetcherConfig')
     .optional()
@@ -64,7 +70,8 @@ const fetcherConfigRequiredValidation = body('fetcherConfig')
 export const validateFetcherValidation = [fetcherConfigOptionalValidation, collectValidationErrors];
 
 export const validateFetcherFetchBody = [
-    dateRequiredValidation,
+    effectiveAtRequiredValidation,
+    temporalModeRequiredValidation,
     fetcherConfigRequiredValidation,
     collectValidationErrors,
 ];

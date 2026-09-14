@@ -1,7 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { NotFoundError, ValidationError } from '../utils/customErrors.js';
 import mongoose from 'mongoose';
-import { sendSuccess } from '../utils/standardResponse.js';
 import * as fetchResultService from '../services/fetchResult.service.js';
 
 // ─── Custom validators ─────────────────────────────

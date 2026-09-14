@@ -1,9 +1,13 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
     title: Fetcher API
     version: 1.0.0
     description: |
-        REST API for managing fetchers within Fetcher API.
+        REST API for discovering and executing fetchers and managing their persisted results.
+
+        Protected operations accept JWT bearer tokens issued for this API. Depending on the
+        operation, the token must represent either a user with the documented minimum system
+        role or an authenticated service.
 servers:
     - url: /
 
@@ -11,9 +15,6 @@ tags:
     - { name: Health, description: Server health check }
     - { name: Fetchers, description: Fetcher management and execution }
     - { name: Fetch Results, description: Fetch result generation and management }
-security:
-    - BearerAuth: []
-
 paths:
     # ──────────────────────────────────────────────
     # Health
@@ -31,22 +32,33 @@ paths:
                         application/json:
                             schema:
                                 type: object
+                                additionalProperties: false
                                 properties:
                                     status:
                                         type: string
+                                        enum: [ok]
+                                        example: ok
                                     message:
                                         type: string
+                                        example: Health check passed!
+                                required:
+                                    - status
+                                    - message
 
     # ──────────────────────────────────────────────
     # Fetchers
     # ──────────────────────────────────────────────
     /api/v1/fetchers:
         get:
+            security:
+                - UserBearerAuth: []
             tags:
                 - Fetchers
             summary: Get all fetchers
             operationId: getFetchers
-            description: Retrieves all available fetchers and their metadata.
+            description: |
+                Retrieves all available fetchers and their metadata.
+                Requires a user token with the `ADMIN` or `SUPERADMIN` system role.
             responses:
                 '200':
                     description: Fetchers retrieved successfully.
@@ -63,6 +75,8 @@ paths:
                                                   $ref: '#/components/schemas/Fetcher'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '500':
                     $ref: '#/components/responses/InternalError'
 
@@ -70,11 +84,14 @@ paths:
         parameters:
             - $ref: '#/components/parameters/fetcherId'
         get:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetchers
             summary: Get fetcher by ID
             operationId: getFetcherById
-            description: Retrieves the details of a specific fetcher by its ID.
+            description: Retrieves a specific fetcher. Accepts either a user token or a service token.
             responses:
                 '200':
                     description: Fetcher retrieved successfully.
@@ -98,11 +115,24 @@ paths:
         parameters:
             - $ref: '#/components/parameters/fetcherId'
         post:
+            security:
+                - UserBearerAuth: []
             tags:
                 - Fetchers
             summary: Execute a fetcher
             operationId: fetchFetcher
-            description: Executes the selected fetcher using the provided fetcher and audit configurations.
+            description: |
+                Executes the selected fetcher directly, without reading or writing `FetchResult`
+                cache entries. This endpoint is intended for manual or diagnostic executions.
+
+                Temporal rules:
+
+                | Fetcher capability | `CAPTURE` | `REPLAY` |
+                | --- | --- | --- |
+                | `SNAPSHOT` | Calls the external source for `effectiveAt`. | Rejected with `400`; a snapshot source cannot reconstruct an uncaptured past instant. |
+                | `HISTORICAL` | Calls the external source for `effectiveAt`. | Calls the historical external source for `effectiveAt`. |
+
+                Requires a user token with the `SUPERADMIN` system role.
             requestBody:
                 $ref: '#/components/requestBodies/FetchFetcherBody'
             responses:
@@ -119,6 +149,8 @@ paths:
                                               $ref: '#/components/schemas/FetcherExecutionResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '400':
                     $ref: '#/components/responses/ValidationError'
                 '404':
@@ -128,13 +160,21 @@ paths:
 
     /api/v1/fetchers/{fetcherId}/validate:
         parameters:
-            - $ref: '#/components/parameters/fetcherId'
+            - $ref: '#/components/parameters/fetcherIdCandidate'
         post:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetchers
             summary: Validate fetcher configuration
             operationId: validateFetcher
-            description: Validates fetcher and audit configuration payloads against the fetcher's schema.
+            description: |
+                Checks whether the fetcher exists and, when `fetcherConfig` is supplied, validates
+                it against the fetcher's schema. An unknown `fetcherId` is reported in the successful
+                response as `valid: false`.
+
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             requestBody:
                 $ref: '#/components/requestBodies/ValidateFetcherBody'
             responses:
@@ -151,6 +191,8 @@ paths:
                                               $ref: '#/components/schemas/ValidateFetcherResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '400':
                     $ref: '#/components/responses/ValidationError'
                 '500':
@@ -164,16 +206,45 @@ paths:
             - $ref: '#/components/parameters/fetcherId'
             - $ref: '#/components/parameters/isAsync'
         post:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetch Results
             summary: Generate a fetch result
             operationId: generateFetchResult
-            description: Creates a fetch result and optionally executes fetch generation asynchronously.
+            description: |
+                Resolves and persists the result identified by `fetcherId`, `effectiveAt` and the
+                canonical hash of `fetcherConfig`. Requests for that same logical key share one entry.
+
+                Resolution matrix when no reusable result exists:
+
+                | Fetcher capability | `CAPTURE` | `REPLAY` |
+                | --- | --- | --- |
+                | `SNAPSHOT` | Calls the external source and stores the observation. | Does not call the external source; creates `UNAVAILABLE` with `PAST_SNAPSHOT_NOT_CAPTURED`. |
+                | `HISTORICAL` | Calls the external source for `effectiveAt`. | Calls the historical external source for `effectiveAt`. |
+
+                Existing result behavior:
+
+                - `COMPLETED`, `UNAVAILABLE` and `IN_PROGRESS` are returned as-is; no new external call is made.
+                - `FAILED` is reclaimed using the same document and reset to `IN_PROGRESS`. A retried
+                  `SNAPSHOT` in `REPLAY` becomes `UNAVAILABLE` without an external call.
+                - The stored `acquisitionMode` describes the request that created or last retried the result.
+                  A cache hit can therefore return a different mode from the current request.
+
+                With `isAsync=false`, a new external operation finishes before responding. With
+                `isAsync=true`, a new external operation returns `IN_PROGRESS` and continues in the
+                background. Cache hits and `SNAPSHOT` + `REPLAY` can return a terminal result immediately
+                even when `isAsync=true`.
+
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             requestBody:
                 $ref: '#/components/requestBodies/GenerateFetchResultBody'
             responses:
                 '200':
-                    description: Fetch result created successfully (or existing duplicated result returned).
+                    description: |
+                        Result claimed, resolved, or reused. Domain outcomes such as `UNAVAILABLE` and
+                        external-fetch `FAILED` are returned as successful HTTP responses; inspect `data.status`.
                     content:
                         application/json:
                             schema:
@@ -183,14 +254,145 @@ paths:
                                       properties:
                                           data:
                                               $ref: '#/components/schemas/FetchResult'
+                            examples:
+                                asynchronousCapture:
+                                    summary: New asynchronous capture still being processed
+                                    value:
+                                        success: true
+                                        message: Fetch result started asynchronously
+                                        httpStatus: 200
+                                        appCode: SUCCESS
+                                        data:
+                                            _id: 67c9ff7b2ddf1b3940f9f321
+                                            startDate: '2026-04-10T09:30:00.000Z'
+                                            endDate: null
+                                            effectiveAt: '2026-04-10T09:30:00.000Z'
+                                            temporalCapability: SNAPSHOT
+                                            acquisitionMode: CAPTURE
+                                            status: IN_PROGRESS
+                                            unavailableReason: null
+                                            fetcherConfig:
+                                                owner: governify
+                                                repository: fetcher
+                                            configHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                            data: null
+                                            createdAt: '2026-04-10T09:30:00.000Z'
+                                            updatedAt: '2026-04-10T09:30:00.000Z'
+                                            __v: 0
+                                        error: null
+                                completedCapture:
+                                    summary: Snapshot captured successfully
+                                    value:
+                                        success: true
+                                        message: Fetch result generated
+                                        httpStatus: 200
+                                        appCode: SUCCESS
+                                        data:
+                                            _id: 67c9ff7b2ddf1b3940f9f322
+                                            startDate: '2026-04-10T09:29:59.950Z'
+                                            endDate: '2026-04-10T09:30:00.120Z'
+                                            effectiveAt: '2026-04-10T09:30:00.000Z'
+                                            temporalCapability: SNAPSHOT
+                                            acquisitionMode: CAPTURE
+                                            status: COMPLETED
+                                            unavailableReason: null
+                                            fetcherConfig:
+                                                owner: governify
+                                                repository: fetcher
+                                            configHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                            data:
+                                                issues:
+                                                    - number: 42
+                                                      column: In progress
+                                            createdAt: '2026-04-10T09:29:59.950Z'
+                                            updatedAt: '2026-04-10T09:30:00.120Z'
+                                            __v: 0
+                                        error: null
+                                unavailableSnapshotReplay:
+                                    summary: Past snapshot was not captured
+                                    value:
+                                        success: true
+                                        message: Fetch result generated
+                                        httpStatus: 200
+                                        appCode: SUCCESS
+                                        data:
+                                            _id: 67c9ff7b2ddf1b3940f9f323
+                                            startDate: '2026-04-17T12:00:00.000Z'
+                                            endDate: '2026-04-17T12:00:00.005Z'
+                                            effectiveAt: '2026-04-10T09:30:00.000Z'
+                                            temporalCapability: SNAPSHOT
+                                            acquisitionMode: REPLAY
+                                            status: UNAVAILABLE
+                                            unavailableReason: PAST_SNAPSHOT_NOT_CAPTURED
+                                            fetcherConfig:
+                                                owner: governify
+                                                repository: fetcher
+                                            configHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                            data: null
+                                            createdAt: '2026-04-17T12:00:00.000Z'
+                                            updatedAt: '2026-04-17T12:00:00.005Z'
+                                            __v: 0
+                                        error: null
+                                completedHistoricalReplay:
+                                    summary: Historical source queried during replay
+                                    value:
+                                        success: true
+                                        message: Fetch result generated
+                                        httpStatus: 200
+                                        appCode: SUCCESS
+                                        data:
+                                            _id: 67c9ff7b2ddf1b3940f9f324
+                                            startDate: '2026-04-17T12:00:00.000Z'
+                                            endDate: '2026-04-17T12:00:00.220Z'
+                                            effectiveAt: '2026-04-10T09:30:00.000Z'
+                                            temporalCapability: HISTORICAL
+                                            acquisitionMode: REPLAY
+                                            status: COMPLETED
+                                            unavailableReason: null
+                                            fetcherConfig:
+                                                latitude: 37.39
+                                                longitude: -5.99
+                                            configHash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                                            data:
+                                                temperature: 21.4
+                                                unit: celsius
+                                            createdAt: '2026-04-17T12:00:00.000Z'
+                                            updatedAt: '2026-04-17T12:00:00.220Z'
+                                            __v: 0
+                                        error: null
+                                failedExternalFetch:
+                                    summary: External source failed; the next request retries this document
+                                    value:
+                                        success: true
+                                        message: Fetch result generated
+                                        httpStatus: 200
+                                        appCode: SUCCESS
+                                        data:
+                                            _id: 67c9ff7b2ddf1b3940f9f325
+                                            startDate: '2026-04-10T09:30:00.000Z'
+                                            endDate: '2026-04-10T09:30:03.000Z'
+                                            effectiveAt: '2026-04-10T09:30:00.000Z'
+                                            temporalCapability: SNAPSHOT
+                                            acquisitionMode: CAPTURE
+                                            status: FAILED
+                                            unavailableReason: null
+                                            fetcherConfig:
+                                                owner: governify
+                                                repository: fetcher
+                                            configHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                            data: null
+                                            createdAt: '2026-04-10T09:29:55.000Z'
+                                            updatedAt: '2026-04-10T09:30:03.000Z'
+                                            __v: 0
+                                        error: null
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '400':
                     $ref: '#/components/responses/ValidationError'
                 '404':
                     $ref: '#/components/responses/NotFound'
-                '422':
-                    $ref: '#/components/responses/ComputationError'
                 '500':
                     $ref: '#/components/responses/InternalError'
 
@@ -198,11 +400,16 @@ paths:
         parameters:
             - $ref: '#/components/parameters/fetcherId'
         get:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetch Results
             summary: Get fetch results by fetcher ID
             operationId: getFetchResultsByFetcherId
-            description: Retrieves all fetch results associated with a given fetcher.
+            description: |
+                Retrieves all fetch results associated with a given fetcher.
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             responses:
                 '200':
                     description: Fetch results retrieved successfully.
@@ -219,16 +426,23 @@ paths:
                                                   $ref: '#/components/schemas/FetchResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '500':
                     $ref: '#/components/responses/InternalError'
         delete:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetch Results
             summary: Delete fetch results by fetcher ID
             operationId: deleteFetchResultsByFetcherId
-            description: Deletes all fetch results associated with a given fetcher.
+            description: |
+                Deletes all fetch results associated with a given fetcher.
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             responses:
                 '200':
                     description: Fetch results deleted successfully.
@@ -243,6 +457,8 @@ paths:
                                               $ref: '#/components/schemas/DeleteManyResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '404':
                     $ref: '#/components/responses/NotFound'
                 '500':
@@ -253,11 +469,16 @@ paths:
             - $ref: '#/components/parameters/fetcherId'
             - $ref: '#/components/parameters/fetchResultId'
         get:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetch Results
             summary: Get fetch result by fetcher ID and fetch result ID
             operationId: getFetchResultByFetcherIdAndFetchResultId
-            description: Retrieves a single fetch result by fetcher ID and fetch result ID.
+            description: |
+                Retrieves a single fetch result by fetcher ID and fetch result ID.
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             responses:
                 '200':
                     description: Fetch result retrieved successfully.
@@ -272,6 +493,8 @@ paths:
                                               $ref: '#/components/schemas/FetchResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '400':
                     $ref: '#/components/responses/ValidationError'
                 '404':
@@ -279,11 +502,16 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
         put:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetch Results
             summary: Update fetch result by fetcher ID and fetch result ID
             operationId: updateFetchResultByFetcherIdAndFetchResultId
-            description: Updates a fetch result by fetcher ID and fetch result ID.
+            description: |
+                Partially updates a fetch result by fetcher ID and fetch result ID.
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             requestBody:
                 $ref: '#/components/requestBodies/UpdateFetchResultBody'
             responses:
@@ -300,6 +528,8 @@ paths:
                                               $ref: '#/components/schemas/FetchResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '400':
                     $ref: '#/components/responses/ValidationError'
                 '404':
@@ -307,11 +537,16 @@ paths:
                 '500':
                     $ref: '#/components/responses/InternalError'
         delete:
+            security:
+                - UserBearerAuth: []
+                - ServiceBearerAuth: []
             tags:
                 - Fetch Results
             summary: Delete fetch result by fetcher ID and fetch result ID
             operationId: deleteFetchResultByFetcherIdAndFetchResultId
-            description: Deletes a fetch result by fetcher ID and fetch result ID.
+            description: |
+                Deletes a fetch result by fetcher ID and fetch result ID.
+                Accepts a service token or a user token with the `SUPERADMIN` system role.
             responses:
                 '200':
                     description: Fetch result deleted successfully.
@@ -326,6 +561,8 @@ paths:
                                               $ref: '#/components/schemas/FetchResult'
                 '401':
                     $ref: '#/components/responses/Unauthorized'
+                '403':
+                    $ref: '#/components/responses/Forbidden'
                 '400':
                     $ref: '#/components/responses/ValidationError'
                 '404':
@@ -335,11 +572,19 @@ paths:
 
 components:
     securitySchemes:
-        BearerAuth:
+        UserBearerAuth:
             type: http
             scheme: bearer
             bearerFormat: JWT
-            description: JWT token required when AUTHENTICATION_ENABLED=true.
+            description: |
+                JWT whose `type` claim is `user`. Operations also state the minimum accepted
+                `systemRole` (`ADMIN` or `SUPERADMIN`). Role priority is
+                `USER < ADMIN < SUPERADMIN`.
+        ServiceBearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: JWT whose `type` claim is `service`.
 
     # ── Parameters ────────────────────────────
     parameters:
@@ -347,23 +592,39 @@ components:
             name: fetcherId
             in: path
             required: true
-            description: ID of the fetcher
+            description: |
+                Registered fetcher identifier. Current examples:
+                `FT_REST_BLUEJAY_REPORTER_LOGS`, `FT_GQL_GITHUB_PROJECTV2_ITEMS`,
+                `FT_GQL_GITHUB_PULL_REQUESTS`, `FT_GQL_GITHUB_ISSUES`, and
+                `FT_GQL_ZENHUB_ISSUES`.
             schema:
                 type: string
-                example: FT_REST_GITHUB_COMMITS
+                example: FT_GQL_GITHUB_ISSUES
         fetchResultId:
             name: fetchResultId
             in: path
             required: true
-            description: Fetch result identifier
+            description: MongoDB ObjectId of the fetch result
             schema:
                 type: string
+                pattern: '^[a-fA-F0-9]{24}$'
                 example: 67c9ff7b2ddf1b3940f9f321
+        fetcherIdCandidate:
+            name: fetcherId
+            in: path
+            required: true
+            description: Fetcher identifier to check; it does not have to be registered.
+            schema:
+                type: string
+                example: FT_GQL_GITHUB_ISSUES
         isAsync:
             name: isAsync
             in: query
             required: false
-            description: If true, creates the fetch result and executes processing in background.
+            description: |
+                If `true`, a newly claimed external operation continues in the background and the
+                response normally contains `IN_PROGRESS`. It has no delaying effect on cache hits or
+                on `SNAPSHOT` + `REPLAY`, which can return a terminal result immediately.
             schema:
                 type: boolean
                 default: false
@@ -372,29 +633,44 @@ components:
     # ── Request Bodies ────────────────────────
     requestBodies:
         FetchFetcherBody:
-            description: Request body for executing a fetcher
+            description: |
+                Request body for a direct, non-persisted execution. The fetcher's registered
+                `temporalCapability` determines whether the requested mode is supported.
+            required: true
             content:
                 application/json:
                     schema:
                         type: object
                         properties:
-                            date:
-                                type: string
-                                format: date-time
-                                description: Fetch date used to initialize the fetch result
-                                example: '2026-04-10T09:30:00.000Z'
+                            temporalContext:
+                                $ref: '#/components/schemas/TemporalContext'
                             fetcherConfig:
                                 $ref: '#/components/schemas/FetcherConfig'
                         required:
-                            - date
+                            - temporalContext
                             - fetcherConfig
-                    example:
-                        date: '2026-04-10T09:30:00.000Z'
-                        fetcherConfig:
-                            owner: governify
-                            repository: collector
+                    examples:
+                        snapshotCapture:
+                            summary: Direct observation of a snapshot source
+                            value:
+                                temporalContext:
+                                    effectiveAt: '2026-04-10T09:30:00.000Z'
+                                    mode: CAPTURE
+                                fetcherConfig:
+                                    owner: governify
+                                    repository: fetcher
+                                    token: github_pat_example
+                        historicalReplay:
+                            summary: Direct historical query for a past instant
+                            value:
+                                temporalContext:
+                                    effectiveAt: '2026-04-01T09:30:00.000Z'
+                                    mode: REPLAY
+                                fetcherConfig:
+                                    latitude: 37.39
+                                    longitude: -5.99
         ValidateFetcherBody:
-            description: Request body for validating fetcher configuration
+            description: Optional request body containing the configuration to validate
             content:
                 application/json:
                     schema:
@@ -405,30 +681,65 @@ components:
                     example:
                         fetcherConfig:
                             owner: governify
-                            repository: collector
+                            repository: fetcher
+                            token: github_pat_example
 
         GenerateFetchResultBody:
-            description: Request body for generating a fetch result
+            description: |
+                Request body for resolving a persisted fetch result. `CAPTURE` and `REPLAY` express
+                the caller's intent; they do not override the fetcher's registered capability.
+            required: true
             content:
                 application/json:
                     schema:
                         type: object
                         properties:
-                            date:
-                                type: string
-                                format: date-time
-                                description: Fetch date used to initialize the fetch result
-                                example: '2026-04-10T09:30:00.000Z'
+                            temporalContext:
+                                $ref: '#/components/schemas/TemporalContext'
                             fetcherConfig:
                                 $ref: '#/components/schemas/FetcherConfig'
                         required:
-                            - date
+                            - temporalContext
                             - fetcherConfig
-                    example:
-                        date: '2026-04-10T09:30:00.000Z'
-                        fetcherConfig:
-                            owner: governify
-                            repository: collector
+                    examples:
+                        captureSnapshot:
+                            summary: Capture a snapshot at the scheduled instant
+                            value:
+                                temporalContext:
+                                    effectiveAt: '2026-04-10T09:30:00.000Z'
+                                    mode: CAPTURE
+                                fetcherConfig:
+                                    owner: governify
+                                    repository: fetcher
+                                    token: github_pat_example
+                        replaySnapshot:
+                            summary: Reuse a previously captured snapshot or return UNAVAILABLE
+                            value:
+                                temporalContext:
+                                    effectiveAt: '2026-04-10T09:30:00.000Z'
+                                    mode: REPLAY
+                                fetcherConfig:
+                                    owner: governify
+                                    repository: fetcher
+                                    token: github_pat_example
+                        captureHistorical:
+                            summary: Capture data from a historical-capable source
+                            value:
+                                temporalContext:
+                                    effectiveAt: '2026-04-10T09:30:00.000Z'
+                                    mode: CAPTURE
+                                fetcherConfig:
+                                    latitude: 37.39
+                                    longitude: -5.99
+                        replayHistorical:
+                            summary: Reuse cached data or query a historical source
+                            value:
+                                temporalContext:
+                                    effectiveAt: '2026-04-01T09:30:00.000Z'
+                                    mode: REPLAY
+                                fetcherConfig:
+                                    latitude: 37.39
+                                    longitude: -5.99
 
         UpdateFetchResultBody:
             description: Request body for updating a fetch result
@@ -439,14 +750,14 @@ components:
                     example:
                         status: COMPLETED
                         startDate: '2026-04-06T10:59:55.000Z'
-                        date: '2026-04-06T11:00:00.000Z'
+                        effectiveAt: '2026-04-06T11:00:00.000Z'
                         endDate: '2026-04-06T11:00:00.000Z'
                         data: This is a placeholder for GitHub fetcher data
 
     # ── Reusable responses ────────────────────────
     responses:
         Unauthorized:
-            description: Unauthorized request (missing/malformed Authorization header or invalid/expired token)
+            description: Missing, malformed, invalid, expired, or unsupported token
             content:
                 application/json:
                     schema:
@@ -459,7 +770,21 @@ components:
                         data: null
                         error:
                             message: Authorization header missing or malformed
-                            details: null
+
+        Forbidden:
+            description: Authenticated user does not have the required system role
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+                    example:
+                        success: false
+                        message: Insufficient permissions
+                        httpStatus: 403
+                        appCode: FORBIDDEN
+                        data: null
+                        error:
+                            message: Insufficient permissions
 
         ValidationError:
             description: Validation error in the submitted data
@@ -496,23 +821,6 @@ components:
                         data: null
                         error:
                             message: Resource not found
-                            details: null
-
-        ComputationError:
-            description: Error while generating the fetch result data
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ErrorResponse'
-                    example:
-                        success: false
-                        message: Failed to generate fetch result
-                        httpStatus: 422
-                        appCode: COMPUTATION_ERROR
-                        data: null
-                        error:
-                            message: Failed to generate fetch result
-                            details: null
 
         InternalError:
             description: Internal server error
@@ -528,13 +836,51 @@ components:
                         data: null
                         error:
                             message: Internal server error
-                            details: null
 
     schemas:
+        TemporalContext:
+            type: object
+            description: |
+                Temporal intent of the operation. The timestamp is exact: the fetcher does not apply
+                observation windows, tolerances, or a maximum lag.
+            additionalProperties: false
+            properties:
+                effectiveAt:
+                    type: string
+                    format: date-time
+                    description: Exact instant whose data the caller wants to represent, in ISO 8601 format.
+                    example: '2026-04-10T09:30:00.000Z'
+                mode:
+                    type: string
+                    enum: [CAPTURE, REPLAY]
+                    description: |
+                        Acquisition intent:
+
+                        - `CAPTURE`: observe and preserve the source at `effectiveAt`.
+                        - `REPLAY`: reconstruct `effectiveAt`. A missing `SNAPSHOT` is cache-only and
+                          becomes `UNAVAILABLE`; a missing `HISTORICAL` result can be fetched externally.
+                    example: REPLAY
+            required:
+                - effectiveAt
+                - mode
+
         # ── Standard response ────────────────────
+        JsonValue:
+            description: Any JSON-compatible value, including null
+            anyOf:
+                - type: object
+                  nullable: true
+                  additionalProperties: true
+                - type: array
+                  items: {}
+                - type: string
+                - type: number
+                - type: boolean
+
         SuccessResponse:
             type: object
             description: Standard wrapper for all successful API responses
+            additionalProperties: false
             properties:
                 success:
                     type: boolean
@@ -549,14 +895,7 @@ components:
                     type: string
                     example: SUCCESS
                 data:
-                    description: Response payload
-                    nullable: true
-                    oneOf:
-                        - type: object
-                        - type: array
-                        - type: string
-                        - type: number
-                        - type: boolean
+                    $ref: '#/components/schemas/JsonValue'
                 error:
                     type: object
                     nullable: true
@@ -572,6 +911,7 @@ components:
         ErrorResponse:
             type: object
             description: Standard wrapper for all error API responses
+            additionalProperties: false
             properties:
                 success:
                     type: boolean
@@ -592,14 +932,9 @@ components:
                         message:
                             type: string
                         details:
-                            description: Additional error information (may be null)
-                            oneOf:
-                                - type: object
-                                - type: array
-                                - type: string
-                                - type: number
-                                - type: boolean
-                            nullable: true
+                            $ref: '#/components/schemas/JsonValue'
+                    required:
+                        - message
             required:
                 - success
                 - message
@@ -611,47 +946,52 @@ components:
         # ── Fetcher ─────────────────────────
         Fetcher:
             type: object
-            description: Fetcher definition and metadata
+            description: Serialized fetcher definition and metadata; the executable `fetch` function is omitted from JSON.
+            additionalProperties: false
             properties:
                 id:
                     type: string
-                    example: FT_REST_GITHUB_COMMITS
+                    description: Registered fetcher identifier
+                    example: FT_GQL_GITHUB_ISSUES
+                temporalCapability:
+                    type: string
+                    enum: [SNAPSHOT, HISTORICAL]
+                    description: |
+                        Temporal behavior registered by the fetcher:
+
+                        - `SNAPSHOT`: the external source only exposes its current state. External access
+                          is allowed in `CAPTURE`; `REPLAY` can only reuse an already stored result.
+                        - `HISTORICAL`: the source can answer for `effectiveAt`, so missing results may be
+                          fetched in both `CAPTURE` and `REPLAY`.
+                    example: SNAPSHOT
                 moreInfo:
                     $ref: '#/components/schemas/FetcherMoreInfo'
                 fetcherConfigSchema:
                     type: object
-                    description: Zod schema definition serialized as object
-                    example:
-                        type: object
-                        properties:
-                            owner:
-                                type: string
-                            repository:
-                                type: string
-                        required:
-                            - owner
-                            - repository
+                    description: Internal Zod schema serialized as JSON. Its structure is library-specific.
+                    additionalProperties: true
                 fetchScript:
                     type: string
-                    example: |
-                        async (_fetcherConfig) => {
-                          return { data: 'This is a placeholder for GitHub fetcher data' };
-                        }
+                    description: String representation of the fetcher's executable function
+                    example: 'async _fetcherConfig => ({ data: [] })'
             required:
                 - id
-                - type
+                - temporalCapability
                 - moreInfo
+                - fetcherConfigSchema
+                - fetchScript
 
         FetcherMoreInfo:
             type: object
             description: Human-readable fetcher metadata
+            additionalProperties: false
             properties:
                 title:
                     type: string
-                    example: GitHub Fetcher
+                    example: GitHub Issues Fetcher
                 description:
                     type: string
-                    example: Fetches data from GitHub repositories, including commits, issues, and pull requests.
+                    example: Fetches every raw issue of a GitHub repository.
                 example:
                     type: string
                     example: ''
@@ -661,31 +1001,76 @@ components:
                 - example
 
         FetcherConfig:
-            type: object
-            description: Fetcher-specific configuration object (shape depends on fetcherId)
-            additionalProperties: true
+            description: |
+                Fetcher-specific configuration. GitHub fetchers use `owner`, `repository`, and
+                `token`; the ZenHub fetcher uses `workspaceId` and `token`; the Bluejay reporter
+                logs fetcher uses an empty object.
+            oneOf:
+                - $ref: '#/components/schemas/EmptyFetcherConfig'
+                - $ref: '#/components/schemas/GitHubFetcherConfig'
+                - $ref: '#/components/schemas/ZenHubFetcherConfig'
             example:
                 owner: governify
-                repository: collector
+                repository: fetcher
+                token: github_pat_example
+
+        EmptyFetcherConfig:
+            type: object
+            description: Configuration for `FT_REST_BLUEJAY_REPORTER_LOGS`
+            maxProperties: 0
+
+        GitHubFetcherConfig:
+            type: object
+            description: Configuration shared by all `FT_GQL_GITHUB_*` fetchers
+            additionalProperties: false
+            properties:
+                owner:
+                    type: string
+                    example: governify
+                repository:
+                    type: string
+                    example: fetcher
+                token:
+                    type: string
+                    description: GitHub token used by the upstream GraphQL request
+                    example: github_pat_example
+            required:
+                - owner
+                - repository
+                - token
+
+        ZenHubFetcherConfig:
+            type: object
+            description: Configuration for `FT_GQL_ZENHUB_ISSUES`
+            additionalProperties: false
+            properties:
+                workspaceId:
+                    type: string
+                    example: 5f1234567890abcdef123456
+                token:
+                    type: string
+                    description: ZenHub token used by the upstream GraphQL request
+                    example: zenhub_token_example
+            required:
+                - workspaceId
+                - token
 
         FetcherExecutionResult:
             type: object
             description: Result returned by a fetcher execution
+            additionalProperties: false
             properties:
                 data:
-                    description: Fetcher output payload
-                    oneOf:
-                        - type: string
-                        - type: object
-                        - type: array
+                    $ref: '#/components/schemas/JsonValue'
             required:
                 - data
             example:
-                data: This is a placeholder for GitHub fetcher data
+                data: []
 
         ValidateFetcherIssue:
             type: object
-            description: Validation issue returned by zod when config is invalid
+            description: Validation issue returned by Zod when the configuration is invalid
+            additionalProperties: true
             properties:
                 code:
                     type: string
@@ -704,25 +1089,24 @@ components:
                 message:
                     type: string
                     example: 'Invalid input: expected string, received undefined'
-                source:
-                    type: string
-                    enum: [fetcherConfig]
-                    example: fetcherConfig
+            required:
+                - code
+                - path
+                - message
 
         ValidateFetcherResult:
             type: object
-            description: Result of validating fetcher and audit configuration payloads
+            description: Fetcher existence and configuration validation result
+            additionalProperties: false
             properties:
                 valid:
                     type: boolean
                     example: true
                 error:
                     type: string
-                    nullable: true
                     example: Invalid fetcherConfig
                 issues:
                     type: array
-                    nullable: true
                     items:
                         $ref: '#/components/schemas/ValidateFetcherIssue'
             required:
@@ -730,38 +1114,73 @@ components:
 
         FetchResult:
             type: object
-            description: Fetch result entity persisted in MongoDB
+            description: |
+                Persisted temporal result. Within a fetcher's collection, `effectiveAt` plus `configHash`
+                form the unique logical key. `COMPLETED`, `UNAVAILABLE`, and `IN_PROGRESS` results are
+                reused. A `FAILED` result is retried by updating the same document.
+            additionalProperties: false
             properties:
                 _id:
                     type: string
+                    description: Stable document identifier, preserved across retries of a `FAILED` result.
                     example: 67c9ff7b2ddf1b3940f9f321
                 startDate:
                     type: string
                     format: date-time
+                    description: When the current execution was claimed.
                     example: '2026-04-06T10:59:55.000Z'
                 endDate:
                     type: string
                     format: date-time
                     nullable: true
+                    description: When the current execution reached a terminal state; null while `IN_PROGRESS`.
                     example: '2026-04-06T11:00:00.000Z'
-                date:
+                effectiveAt:
                     type: string
                     format: date-time
-                    nullable: true
+                    description: Exact instant represented by this result and part of its logical cache key.
                     example: '2026-04-06T11:00:00.000Z'
+                temporalCapability:
+                    type: string
+                    enum: [SNAPSHOT, HISTORICAL]
+                    description: Capability of the fetcher recorded when this result was created or last retried.
+                acquisitionMode:
+                    type: string
+                    enum: [CAPTURE, REPLAY]
+                    description: |
+                        Mode that created or last retried this document. On a cache hit this can differ
+                        from the current request's mode because the stored result is returned unchanged.
                 status:
                     type: string
-                    enum: [IN_PROGRESS, COMPLETED, FAILED]
+                    enum: [IN_PROGRESS, COMPLETED, UNAVAILABLE, FAILED]
+                    description: |
+                        Result lifecycle:
+
+                        - `IN_PROGRESS`: an asynchronous or concurrent external operation is running.
+                        - `COMPLETED`: data was obtained successfully and is available in `data`.
+                        - `UNAVAILABLE`: the requested instant cannot be resolved under the temporal rules;
+                          this is a terminal, reusable domain outcome, not an HTTP error.
+                        - `FAILED`: the external operation failed; the next generate request reclaims and retries it.
                     example: COMPLETED
+                unavailableReason:
+                    type: string
+                    nullable: true
+                    enum: [PAST_SNAPSHOT_NOT_CAPTURED, HISTORICAL_DATA_NOT_AVAILABLE]
+                    description: |
+                        Reason for `UNAVAILABLE`; null for every other status.
+
+                        - `PAST_SNAPSHOT_NOT_CAPTURED`: replay requested for a snapshot that was not stored.
+                        - `HISTORICAL_DATA_NOT_AVAILABLE`: reserved for a historical source that can
+                          explicitly report that the instant has no data. Generic source errors produce `FAILED`.
                 fetcherConfig:
                     $ref: '#/components/schemas/FetcherConfig'
+                configHash:
+                    type: string
+                    description: SHA-256 hash of the canonical fetcher configuration and part of the logical cache key.
+                    pattern: '^[a-f0-9]{64}$'
+                    example: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                 data:
-                    nullable: true
-                    oneOf:
-                        - type: string
-                        - type: object
-                        - type: array
-                    example: This is a placeholder for GitHub fetcher data
+                    $ref: '#/components/schemas/JsonValue'
                 createdAt:
                     type: string
                     format: date-time
@@ -770,10 +1189,30 @@ components:
                     type: string
                     format: date-time
                     example: '2026-04-06T11:00:00.000Z'
+                __v:
+                    type: integer
+                    description: MongoDB document version
+                    example: 0
+            required:
+                - _id
+                - startDate
+                - endDate
+                - effectiveAt
+                - temporalCapability
+                - acquisitionMode
+                - status
+                - unavailableReason
+                - fetcherConfig
+                - configHash
+                - data
+                - createdAt
+                - updatedAt
+                - __v
 
         UpdateFetchResultRequest:
             type: object
             description: Partial payload for updating a fetch result
+            additionalProperties: false
             properties:
                 startDate:
                     type: string
@@ -782,25 +1221,22 @@ components:
                     type: string
                     format: date-time
                     nullable: true
-                date:
+                effectiveAt:
                     type: string
                     format: date-time
                     nullable: true
                 status:
                     type: string
-                    enum: [IN_PROGRESS, COMPLETED, FAILED]
+                    enum: [IN_PROGRESS, COMPLETED, UNAVAILABLE, FAILED]
                 fetcherConfig:
                     $ref: '#/components/schemas/FetcherConfig'
                 data:
-                    nullable: true
-                    oneOf:
-                        - type: string
-                        - type: object
-                        - type: array
+                    $ref: '#/components/schemas/JsonValue'
 
         DeleteManyResult:
             type: object
             description: MongoDB delete many operation result
+            additionalProperties: false
             properties:
                 acknowledged:
                     type: boolean

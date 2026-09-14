@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
+import { TemporalCapability } from '../../../../types/temporal.js';
 import { githubGraphQL } from '../../utils/github.graphql.util.js';
 
 export const getGithubIssues = async (
@@ -69,6 +70,7 @@ export const getGithubIssues = async (
 
 export const FT_GQL_GITHUB_ISSUES: IFetcher = {
     id: 'FT_GQL_GITHUB_ISSUES',
+    temporalCapability: TemporalCapability.SNAPSHOT,
     moreInfo: {
         title: 'GitHub Issues Fetcher',
         description:
