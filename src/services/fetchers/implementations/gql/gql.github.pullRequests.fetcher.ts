@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
 import { TemporalCapability } from '../../../../types/temporal.js';
-import { githubGraphQL } from '../../utils/github.graphql.util.js';
+import { githubGraphQL } from '../../utils/github.api.util.js';
+import { getInstallationToken } from '../../utils/github.installationToken.js';
 
 interface PullRequestsPage {
     pageInfo: { hasNextPage: boolean; endCursor: string | null };
@@ -89,14 +90,16 @@ export const FT_GQL_GITHUB_PULL_REQUESTS: IFetcher = {
     fetcherConfigSchema: z.object({
         owner: z.string(),
         repository: z.string(),
-        token: z.string(),
+        installationId: z.coerce.number().int().positive(),
     }),
-    fetch: async (_fetcherConfig) => {
-        const { owner, repository, token } = _fetcherConfig as {
+    fetch: async (fetcherConfig) => {
+        const { owner, repository, installationId } = fetcherConfig as {
             owner: string;
             repository: string;
-            token: string;
+            installationId: number;
         };
+
+        const token = await getInstallationToken(installationId);
         return { data: await getPullRequests(owner, repository, token) };
     },
 };

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { IFetcher } from '../../../../types/fetcher.js';
 import { TemporalCapability } from '../../../../types/temporal.js';
-import { githubGraphQL } from '../../utils/github.graphql.util.js';
+import { githubGraphQL } from '../../utils/github.api.util.js';
+import { getInstallationToken } from '../../utils/github.installationToken.js';
 
 const getBasicProjectItems = async (projectId: string, token: string) => {
     const items = [];
@@ -208,13 +209,15 @@ export const FT_GQL_GITHUB_PROJECTV2_ITEMS_BASIC: IFetcher = {
     },
     fetcherConfigSchema: z.object({
         projectIds: z.array(z.string()),
-        token: z.string(),
+        installationId: z.coerce.number().int().positive(),
     }),
     fetch: async (fetcherConfig) => {
-        const { projectIds, token } = fetcherConfig as {
+        const { projectIds, installationId } = fetcherConfig as {
             projectIds: string[];
-            token: string;
+            installationId: number;
         };
+
+        const token = await getInstallationToken(installationId);
         const items = [];
         for (const projectId of projectIds) {
             const projectItems = await getBasicProjectItems(projectId, token);
@@ -235,13 +238,15 @@ export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
     },
     fetcherConfigSchema: z.object({
         projectIds: z.array(z.string()),
-        token: z.string(),
+        installationId: z.coerce.number().int().positive(),
     }),
     fetch: async (fetcherConfig) => {
-        const { projectIds, token } = fetcherConfig as {
+        const { projectIds, installationId } = fetcherConfig as {
             projectIds: string[];
-            token: string;
+            installationId: number;
         };
+
+        const token = await getInstallationToken(installationId);
         const items = [];
         for (const projectId of projectIds) {
             const projectItems = await getProjectItems(projectId, token);
