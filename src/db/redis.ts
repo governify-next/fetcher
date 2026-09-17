@@ -103,6 +103,17 @@ export const setCache = async (key: string, value: unknown, ttl = 300) => {
     }
 };
 
+export const setCacheIfNotExists = async (key: string, value: unknown, ttl = 300) => {
+    if (!isConnected) return false;
+    try {
+        const result = await client.set(key, JSON.stringify(value), { EX: ttl, NX: true });
+        return result === 'OK';
+    } catch (err) {
+        logger.error(`Error setting redis cache if not exists(${key}):`, err);
+        return false;
+    }
+};
+
 export const getCache = async <T = unknown>(key: string): Promise<T | null> => {
     if (!isConnected) return null;
     try {

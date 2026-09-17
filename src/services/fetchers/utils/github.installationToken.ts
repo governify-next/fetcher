@@ -3,51 +3,60 @@ import { bootEnv } from '../../../config/bootConfig.js';
 import { ValidationError } from '../../../utils/customErrors.js';
 import { githubREST } from './github.api.util.js';
 import { getLogger } from '../../../utils/logger.js';
+import * as redis from '../../../db/redis.js';
 
+const TOKEN_KEY = (installationId: number) =>
+    `collector:github:installation:${installationId}:token`;
+const LOCK_KEY = (installationId: number) => `collector:github:installation:${installationId}:lock`;
+const LOCK_TTL_SECONDS = 30;
 const logger = getLogger('github.installationToken');
-
-// Cache of installation tokens and rotation status
-const installationCache = new Map<number, { token: string; expires_at: string }>();
-const inflightRotations = new Map<number, Promise<string>>();
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getInstallationToken = async (installationId: number) => {
     logger.info(`Getting installation token for installation with ID: ${installationId}.`);
-    const cached = installationCache.get(installationId);
-    // Case 1 (valid token): If installation has token and is valid, return it
-    if (cached && isTokenValid(cached.expires_at)) {
-        logger.info('Cache has a valid token for the installation. Returning it...');
-        return cached.token;
+    const token = await findValidTokenInCache(installationId);
+    if (token) return token;
+
+    const acquired = await redis.setCacheIfNotExists(
+        LOCK_KEY(installationId),
+        'rotating',
+        LOCK_TTL_SECONDS,
+    );
+    if (!acquired) {
+        // Case 2 (not valid, not creator): If installation needs a new token, but rotation exists, wait for resolution of existing rotation
+        return waitForCachedToken(installationId);
     }
 
-    // Case 2 (not valid, not creator): If installation has no token or is invalid, but Promise of rotation exists, return promise and wait for resolution
-    const inflight = inflightRotations.get(installationId);
-    if (inflight) {
-        logger.info(
-            `Need to generate a new token for the installation with ID ${installationId}. Waiting for resolution...`,
-        );
-        return inflight; // The await will be resolved when the rotation is complete
-    }
-
-    // Case 3 (not valid, creator): Token not valid, but no promise of rotation exists. Rotate token and delete promise when complete
-    const rotation = (async () => {
-        logger.info(
-            `Need to generate a new token for the installation with ID ${installationId}. Rotating token...`,
-        );
+    try {
+        // Case 3 (not valid, creator): If installation needs a new token, but rotation does not exists. Rotate token an delete lock when complete
         const { token, expires_at } = await rotateInstallationToken(installationId);
-        installationCache.set(installationId, { token, expires_at });
+        await redis.setCache(
+            TOKEN_KEY(installationId),
+            { token, expires_at },
+            Math.floor((new Date(expires_at).getTime() - Date.now()) / 1000),
+        ); // expires in aprox. 1 hour
         logger.info(
             `New token generated and cached for the installation with ID ${installationId}. Token expires at ${expires_at}.`,
         );
         return token;
-    })().finally(() => {
-        inflightRotations.delete(installationId);
-        logger.info(
-            `Promise of rotation for the installation with ID ${installationId} deleted successfully.`,
-        );
-    });
-    logger.info(`Setting promise of rotation for the installation with ID ${installationId}...`);
-    inflightRotations.set(installationId, rotation);
-    return rotation;
+    } finally {
+        await redis.delCache(LOCK_KEY(installationId));
+        logger.info(`Lock for the installation with ID ${installationId} deleted successfully.`);
+    }
+};
+
+const waitForCachedToken = async (installationId: number) => {
+    logger.info(`Waiting for cached token for the installation with ID ${installationId}...`);
+    const deadline = Date.now() + LOCK_TTL_SECONDS * 1000;
+    while (Date.now() < deadline) {
+        await delay(150);
+        const token = await findValidTokenInCache(installationId);
+        if (token) return token;
+    }
+    logger.error(
+        `Timeout waiting for cached token for the installation with ID ${installationId}.`,
+    );
+    throw new Error(`Can not get a valid token for the installation with ID ${installationId}.`);
 };
 
 const isTokenValid = (expiresAt: string) => {
@@ -68,6 +77,17 @@ const rotateInstallationToken = async (installationId: number) => {
     );
 
     return data;
+};
+
+const findValidTokenInCache = async (installationId: number) => {
+    const cached = await redis.getCache<{ token: string; expires_at: string }>(
+        TOKEN_KEY(installationId),
+    );
+    // Case 1 (valid token): If installation has token and is valid, return it
+    if (cached && isTokenValid(cached.expires_at)) {
+        logger.info('Cache has a valid token for the installation. Returning it...');
+        return cached.token;
+    }
 };
 
 const generateAppJWT = (appId: string, privateKey: string) => {
