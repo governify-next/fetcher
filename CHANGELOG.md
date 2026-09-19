@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/governify-next/fetcher/compare/v1.1.0...v1.2.0) (2026-09-19)
+
+
+### Features
+
+* add Redis integration with configuration and caching support ([b9cc0eb](https://github.com/governify-next/fetcher/commit/b9cc0ebc83a3484ef8069bf8b42261ffe3da6d5a))
+* integrate redis cache with token management generation ([ec4ab7b](https://github.com/governify-next/fetcher/commit/ec4ab7bb2285c52cfe76cad513034f41401cada1))
+
+
+### Bug Fixes
+
+* v1.1.0 with token management ([3a4932d](https://github.com/governify-next/fetcher/commit/3a4932dda5675dd31f8994713d37be57080c3cf7))
+
 ## [1.1.0](https://github.com/governify-next/fetcher/compare/v1.0.0...v1.1.0) (2026-09-14)
 
 ### Features
