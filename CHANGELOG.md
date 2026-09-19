@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/governify-next/fetcher/compare/v1.2.0...v1.2.1) (2026-09-19)
+
+
+### Bug Fixes
+
+* new version ([1cf9b7e](https://github.com/governify-next/fetcher/commit/1cf9b7e51774325ad7edc2493d19c5f05d443107))
+* no changes for prettier ([2115f12](https://github.com/governify-next/fetcher/commit/2115f128eb578055512ef161000baa9710616ed7))
+
 ## [1.2.0](https://github.com/governify-next/fetcher/compare/v1.1.0...v1.2.0) (2026-09-19)
 
 
