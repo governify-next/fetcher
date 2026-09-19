@@ -58,7 +58,7 @@ paths:
             operationId: getFetchers
             description: |
                 Retrieves all available fetchers and their metadata.
-                Requires a user token with the `ADMIN` or `SUPERADMIN` system role.
+                Requires a user token with the `ADMIN` or `SUPERADMIN` system role
             responses:
                 '200':
                     description: Fetchers retrieved successfully.
