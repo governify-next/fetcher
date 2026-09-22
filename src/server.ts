@@ -4,11 +4,13 @@ import { bootEnv } from './config/bootConfig.js';
 import { connectMongo } from './db/mongo.js';
 import { fetchServiceToken } from './utils/serviceAuthentication.js';
 import { connectRedis } from './db/redis.js';
+import { syncFetchResultIndexes } from './services/fetchResult.service.js';
 
 const logger = getLogger().setTag('server.ts');
 const PORT = bootEnv.PORT;
 
 connectMongo()
+    .then(() => syncFetchResultIndexes())
     .then(() => {
         connectRedis();
         app.listen(PORT, () => {
