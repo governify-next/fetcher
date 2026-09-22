@@ -135,3 +135,9 @@ export const deleteFetchResultByFetcherIdAndFetchResultId = async (
 ) => {
     return await getFetcherResultsModel(fetcherId).findByIdAndDelete(fetchResultId);
 };
+
+export const syncFetchResultIndexes = async (fetcherIds: string[]) => {
+    await Promise.all(
+        fetcherIds.map((fetcherId) => getFetcherResultsModel(fetcherId).syncIndexes()),
+    );
+};
