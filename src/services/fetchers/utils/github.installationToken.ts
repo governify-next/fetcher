@@ -13,7 +13,7 @@ const logger = getLogger('github.installationToken');
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getInstallationToken = async (installationId: number) => {
-    logger.info(`Getting installation token for installation with ID: ${installationId}.`);
+    logger.debug(`Getting installation token for installation with ID: ${installationId}.`);
     const token = await findValidTokenInCache(installationId);
     if (token) return token;
 
@@ -35,18 +35,18 @@ export const getInstallationToken = async (installationId: number) => {
             { token, expires_at },
             Math.floor((new Date(expires_at).getTime() - Date.now()) / 1000),
         ); // expires in aprox. 1 hour
-        logger.info(
+        logger.debug(
             `New token generated and cached for the installation with ID ${installationId}. Token expires at ${expires_at}.`,
         );
         return token;
     } finally {
         await redis.delCache(LOCK_KEY(installationId));
-        logger.info(`Lock for the installation with ID ${installationId} deleted successfully.`);
+        logger.debug(`Lock for the installation with ID ${installationId} deleted successfully.`);
     }
 };
 
 const waitForCachedToken = async (installationId: number) => {
-    logger.info(`Waiting for cached token for the installation with ID ${installationId}...`);
+    logger.debug(`Waiting for cached token for the installation with ID ${installationId}...`);
     const deadline = Date.now() + LOCK_TTL_SECONDS * 1000;
     while (Date.now() < deadline) {
         await delay(150);
@@ -85,7 +85,7 @@ const findValidTokenInCache = async (installationId: number) => {
     );
     // Case 1 (valid token): If installation has token and is valid, return it
     if (cached && isTokenValid(cached.expires_at)) {
-        logger.info('Cache has a valid token for the installation. Returning it...');
+        logger.debug('Cache has a valid token for the installation. Returning it...');
         return cached.token;
     }
 };

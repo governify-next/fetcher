@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { FetchStatus, FetchUnavailabilityReason } from '../types/fetchStatus.js';
 import { TemporalCapability, TemporalMode } from '../types/temporal.js';
 
-export interface IFetchResult extends Document {
+export interface IFetchResultData {
     startDate: Date;
     endDate: Date | null;
     effectiveAt: Date;
@@ -14,6 +14,8 @@ export interface IFetchResult extends Document {
     configHash: string;
     data: unknown | null;
 }
+
+export interface IFetchResult extends IFetchResultData, Document {}
 
 const FetchResultSchema: Schema<IFetchResult> = new Schema(
     {
@@ -43,7 +45,18 @@ const FetchResultSchema: Schema<IFetchResult> = new Schema(
     { timestamps: true },
 );
 
-FetchResultSchema.index({ effectiveAt: 1, configHash: 1 }, { unique: true });
+FetchResultSchema.index(
+    { configHash: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { temporalCapability: TemporalCapability.HISTORICAL },
+    },
+);
+
+FetchResultSchema.index(
+    { effectiveAt: 1, configHash: 1 },
+    { unique: true, partialFilterExpression: { temporalCapability: TemporalCapability.SNAPSHOT } },
+);
 
 const FETCH_RESULT_COLLECTION_PREFIX = 'fetchresults';
 const FETCH_RESULT_MODEL_PREFIX = 'FetchResult';

@@ -1,41 +1,57 @@
-import { IFetchResult, getFetcherResultsModel } from '../models/fetchResult.model.js';
+import { Model } from 'mongoose';
+import {
+    IFetchResult,
+    IFetchResultData,
+    getFetcherResultsModel,
+} from '../models/fetchResult.model.js';
+import { IFetchResultKey } from '../types/fetchResultKey.js';
 import { FetchStatus } from '../types/fetchStatus.js';
+import { TemporalCapability } from '../types/temporal.js';
 
 export const claimFetchResultByFetcherId = async (
     fetcherId: string,
-    fetcherResultData: Partial<IFetchResult>,
+    fetcherResultData: IFetchResultData,
 ) => {
     const FetchResultModel = getFetcherResultsModel(fetcherId);
 
-    const key = {
-        effectiveAt: fetcherResultData.effectiveAt,
-        configHash: fetcherResultData.configHash,
-    };
+    const key =
+        fetcherResultData.temporalCapability === TemporalCapability.HISTORICAL
+            ? { configHash: fetcherResultData.configHash }
+            : {
+                  effectiveAt: fetcherResultData.effectiveAt,
+                  configHash: fetcherResultData.configHash,
+              };
 
     const existingFetchResult = await FetchResultModel.findOne(key);
     if (existingFetchResult) {
-        if (existingFetchResult.status !== FetchStatus.FAILED) {
-            return {
-                claimedFetchResult: existingFetchResult,
-                shouldFetch: false,
-            };
+        if (existingFetchResult.status === FetchStatus.FAILED) {
+            // FAILED snapshot or historical fetchResult needs a retry
+            return await findAndUpdateClaimWithConcurrency(
+                FetchResultModel,
+                fetcherResultData,
+                key,
+                FetchStatus.FAILED,
+            );
         }
 
-        const retriedFetchResult = await FetchResultModel.findOneAndUpdate(
-            { ...key, status: FetchStatus.FAILED },
-            { $set: fetcherResultData },
-            { new: true },
-        );
+        // invalid COMPLETED historical fetchResult
+        const needsRefresh =
+            fetcherResultData.temporalCapability === TemporalCapability.HISTORICAL &&
+            existingFetchResult.status === FetchStatus.COMPLETED &&
+            existingFetchResult.effectiveAt < fetcherResultData.effectiveAt;
 
-        if (retriedFetchResult) {
-            return {
-                claimedFetchResult: retriedFetchResult,
-                shouldFetch: true,
-            };
+        if (needsRefresh) {
+            return await findAndUpdateClaimWithConcurrency(
+                FetchResultModel,
+                fetcherResultData,
+                key,
+                FetchStatus.COMPLETED,
+            );
         }
 
+        // snapshot or valid historical COMPLETED/IN_PROGRESS fetchResult
         return {
-            claimedFetchResult: await FetchResultModel.findOne(key),
+            claimedFetchResult: existingFetchResult,
             shouldFetch: false,
         };
     }
@@ -61,6 +77,31 @@ export const claimFetchResultByFetcherId = async (
             shouldFetch: false,
         };
     }
+};
+
+const findAndUpdateClaimWithConcurrency = async (
+    FetchResultModel: Model<IFetchResult>,
+    fetcherResultData: IFetchResultData,
+    key: IFetchResultKey,
+    expectedStatus: FetchStatus,
+) => {
+    const { data, ...basicFetcherResultData } = fetcherResultData;
+    const updatedFetchResult = await FetchResultModel.findOneAndUpdate(
+        { ...key, status: expectedStatus },
+        { $set: basicFetcherResultData },
+        { new: true },
+    );
+    if (updatedFetchResult) {
+        return {
+            claimedFetchResult: updatedFetchResult,
+            shouldFetch: true,
+        };
+    }
+    // Concurrency call, need to find updated fetchResult
+    return {
+        claimedFetchResult: await FetchResultModel.findOne(key),
+        shouldFetch: false,
+    };
 };
 
 export const getFetchResultsByFetcherId = async (fetcherId: string) => {
