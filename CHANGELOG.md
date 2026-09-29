@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/governify-next/fetcher/compare/v1.2.1...v1.3.0) (2026-09-29)
+
+
+### Features
+
+* add @oas-tools/oas-telemetry for enhanced telemetry support ([67f030b](https://github.com/governify-next/fetcher/commit/67f030be9708a41b595f9eaf909f96dd088a1fe3))
+* new version ([3850f66](https://github.com/governify-next/fetcher/commit/3850f66c3fab6f12f7c818464778c48224fe00dd))
+
+
+### Bug Fixes
+
+* sync fetchResult collections and indexes to avoid duplicated data in first call ([7150862](https://github.com/governify-next/fetcher/commit/71508620664772af40376f6a41147bc7090bd33d))
+
 ## [1.2.1](https://github.com/governify-next/fetcher/compare/v1.2.0...v1.2.1) (2026-09-19)
 
 
