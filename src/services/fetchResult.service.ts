@@ -150,3 +150,10 @@ export const deleteFetchResultByFetcherIdAndFetchResultId = async (
         fetchResultId,
     );
 };
+
+// Create fetchResults collections and sync indexes (creating the new ones and removing the old ones)
+export const syncFetchResultIndexes = async () => {
+    const fetcherIds = fetcherService.getFetchers().map((fetcher) => fetcher.id);
+    await fetchResultRepository.syncFetchResultIndexes(fetcherIds);
+    logger.info(`Collections and indexes synced for ${fetcherIds.length} fetchers`);
+};
