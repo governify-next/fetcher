@@ -31,6 +31,7 @@ const getPullRequests = async (
                 id
                 number
                 title
+                url
                 body
                 bodyText
                 baseRefName
@@ -84,7 +85,7 @@ export const FT_GQL_GITHUB_PULL_REQUESTS: IFetcher = {
     moreInfo: {
         title: 'GitHub Pull Requests Fetcher',
         description:
-            'Fetches every raw pull request of a GitHub repository, including author, mergedBy, comments and reviews with their authors and body text.',
+            'Fetches every raw pull request of a GitHub repository, including its URL, author, mergedBy, comments and reviews with their authors and body text.',
         example: '',
     },
     fetcherConfigSchema: z.object({

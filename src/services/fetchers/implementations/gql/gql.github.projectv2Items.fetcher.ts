@@ -30,6 +30,7 @@ const getProjectItems = async (projectId: string, token: string) => {
                     ... on Issue {
                       number
                       title
+                      url
                       updatedAt
                       assignees(first: 10) {
                         nodes {
@@ -204,7 +205,7 @@ export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
     moreInfo: {
         title: 'GitHub ProjectV2 Items Fetcher',
         description:
-            'Fetches every raw item from all GitHub ProjectsV2 attached to a repository, including field values, content, assignees, linked branches and closing pull requests, without historical information.',
+            'Fetches every raw item from all GitHub ProjectsV2 attached to a repository, including field values, content, issue URL, assignees, linked branches and closing pull requests, without historical information.',
         example: '',
     },
     fetcherConfigSchema: z.object({
