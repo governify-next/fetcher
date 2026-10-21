@@ -24,6 +24,7 @@ export const getGithubIssues = async (
                     nodes {
                         number
                         title
+                        url
                         updatedAt
                         createdAt
                         assignees(first: 10) {
@@ -75,7 +76,7 @@ export const FT_GQL_GITHUB_ISSUES: IFetcher = {
     moreInfo: {
         title: 'GitHub Issues Fetcher',
         description:
-            'Fetches every raw issue of a GitHub repository, including assignees, linked branches and closing pull request references.',
+            'Fetches every raw issue of a GitHub repository, including its URL, assignees, linked branches and closing pull request references.',
         example: '',
     },
     fetcherConfigSchema: z.object({
