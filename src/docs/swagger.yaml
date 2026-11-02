@@ -51,7 +51,7 @@ paths:
     /api/v1/fetchers:
         get:
             security:
-                - UserBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetchers
             summary: Get all fetchers
@@ -85,8 +85,7 @@ paths:
             - $ref: '#/components/parameters/fetcherId'
         get:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetchers
             summary: Get fetcher by ID
@@ -116,7 +115,7 @@ paths:
             - $ref: '#/components/parameters/fetcherId'
         post:
             security:
-                - UserBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetchers
             summary: Execute a fetcher
@@ -163,8 +162,7 @@ paths:
             - $ref: '#/components/parameters/fetcherIdCandidate'
         post:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetchers
             summary: Validate fetcher configuration
@@ -207,8 +205,7 @@ paths:
             - $ref: '#/components/parameters/isAsync'
         post:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetch Results
             summary: Generate a fetch result
@@ -401,8 +398,7 @@ paths:
             - $ref: '#/components/parameters/fetcherId'
         get:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetch Results
             summary: Get fetch results by fetcher ID
@@ -434,8 +430,7 @@ paths:
                     $ref: '#/components/responses/InternalError'
         delete:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetch Results
             summary: Delete fetch results by fetcher ID
@@ -470,8 +465,7 @@ paths:
             - $ref: '#/components/parameters/fetchResultId'
         get:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetch Results
             summary: Get fetch result by fetcher ID and fetch result ID
@@ -503,8 +497,7 @@ paths:
                     $ref: '#/components/responses/InternalError'
         put:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetch Results
             summary: Update fetch result by fetcher ID and fetch result ID
@@ -538,8 +531,7 @@ paths:
                     $ref: '#/components/responses/InternalError'
         delete:
             security:
-                - UserBearerAuth: []
-                - ServiceBearerAuth: []
+                - BearerAuth: []
             tags:
                 - Fetch Results
             summary: Delete fetch result by fetcher ID and fetch result ID
@@ -572,19 +564,13 @@ paths:
 
 components:
     securitySchemes:
-        UserBearerAuth:
+        BearerAuth:
             type: http
             scheme: bearer
             bearerFormat: JWT
             description: |
-                JWT whose `type` claim is `user`. Operations also state the minimum accepted
-                `systemRole` (`ADMIN` or `SUPERADMIN`). Role priority is
-                `USER < ADMIN < SUPERADMIN`.
-        ServiceBearerAuth:
-            type: http
-            scheme: bearer
-            bearerFormat: JWT
-            description: JWT whose `type` claim is `service`.
+                JWT issued by Authenticator. Enter only the token, without the Bearer prefix.
+                Use a user or service token according to the operation's authentication requirements.
 
     # ── Parameters ────────────────────────────
     parameters:
