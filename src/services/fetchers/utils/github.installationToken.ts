@@ -22,6 +22,9 @@ export const getInstallationToken = async (installationId: number) => {
         'rotating',
         LOCK_TTL_SECONDS,
     );
+    if (acquired === null) {
+        return (await rotateInstallationToken(installationId)).token;
+    }
     if (!acquired) {
         // Case 2 (not valid, not creator): If installation needs a new token, but rotation exists, wait for resolution of existing rotation
         return waitForCachedToken(installationId);
@@ -50,6 +53,9 @@ const waitForCachedToken = async (installationId: number) => {
     const deadline = Date.now() + LOCK_TTL_SECONDS * 1000;
     while (Date.now() < deadline) {
         await delay(150);
+        if (!redis.isConnected) {
+            return (await rotateInstallationToken(installationId)).token;
+        }
         const token = await findValidTokenInCache(installationId);
         if (token) return token;
     }
