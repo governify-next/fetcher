@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { IFetcher } from '../../../../types/fetcher.js';
-import { TemporalCapability } from '../../../../types/temporal.js';
-import { githubGraphQL } from '../../utils/github.api.util.js';
-import { getInstallationToken } from '../../utils/github.installationToken.js';
+import { IFetcher } from '../../../../../types/fetcher.js';
+import { TemporalCapability } from '../../../../../types/temporal.js';
+import { githubGraphQL } from '../../../utils/github.api.util.js';
+import { getInstallationToken } from '../../../utils/github.installationToken.js';
 
 const getProjectItems = async (projectId: string, token: string) => {
     const items = [];

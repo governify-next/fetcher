@@ -1,5 +1,5 @@
-import { IFetcher } from '../../../../types/fetcher.js';
-import { TemporalCapability } from '../../../../types/temporal.js';
+import { IFetcher } from '../../../../../types/fetcher.js';
+import { TemporalCapability } from '../../../../../types/temporal.js';
 import { z } from 'zod';
 
 export const FT_REST_BLUEJAY_REPORTER_LOGS: IFetcher = {
