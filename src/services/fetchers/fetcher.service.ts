@@ -3,11 +3,14 @@ import { IFetcher } from '../../types/fetcher.js';
 import { ITemporalContext, TemporalCapability, TemporalMode } from '../../types/temporal.js';
 import { ValidationError } from '../../utils/customErrors.js';
 
-import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/rest.bluejay.fetcher.js';
-import { FT_GQL_GITHUB_PULL_REQUESTS } from './implementations/gql/gql.github.pullRequests.fetcher.js';
-import { FT_GQL_GITHUB_ISSUES } from './implementations/gql/gql.github.issues.fetcher.js';
-import { FT_GQL_ZENHUB_ISSUES } from './implementations/gql/gql.zenhub.fetcher.js';
-import { FT_GQL_GITHUB_PROJECTV2_ITEMS } from './implementations/gql/gql.github.projectv2Items.fetcher.js';
+import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/bluejay/logs.fetcher.js';
+import { FT_GQL_GITHUB_PULL_REQUESTS } from './implementations/gql/github/pullRequests.fetcher.js';
+import { FT_GQL_GITHUB_ISSUES } from './implementations/gql/github/issues.fetcher.js';
+import { FT_GQL_ZENHUB_ISSUES } from './implementations/gql/zenhub/issues.fetcher.js';
+import { FT_GQL_GITHUB_PROJECTV2_ITEMS } from './implementations/gql/github/projectv2Items.fetcher.js';
+import { FT_REST_GITLAB_COMMITS } from './implementations/rest/gitlab/commits.fetcher.js';
+import { FT_GQL_GITLAB_MERGE_REQUESTS } from './implementations/gql/gitlab/mergeRequests.fetcher.js';
+import { FT_REST_GITLAB_ITEMS } from './implementations/rest/gitlab/items.fetcher.js';
 
 export const fetchers: Record<string, IFetcher> = {
     FT_REST_BLUEJAY_REPORTER_LOGS,
@@ -15,6 +18,9 @@ export const fetchers: Record<string, IFetcher> = {
     FT_GQL_GITHUB_ISSUES,
     FT_GQL_ZENHUB_ISSUES,
     FT_GQL_GITHUB_PROJECTV2_ITEMS,
+    FT_REST_GITLAB_COMMITS,
+    FT_GQL_GITLAB_MERGE_REQUESTS,
+    FT_REST_GITLAB_ITEMS,
 };
 
 const injectFetchScriptStringToMetric = (
