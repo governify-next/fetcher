@@ -7,7 +7,10 @@ import { FT_REST_BLUEJAY_REPORTER_LOGS } from './implementations/rest/bluejay/lo
 import { FT_GQL_GITHUB_PULL_REQUESTS } from './implementations/gql/github/pullRequests.fetcher.js';
 import { FT_GQL_GITHUB_ISSUES } from './implementations/gql/github/issues.fetcher.js';
 import { FT_GQL_ZENHUB_ISSUES } from './implementations/gql/zenhub/issues.fetcher.js';
-import { FT_GQL_GITHUB_PROJECTV2_ITEMS } from './implementations/gql/github/projectv2Items.fetcher.js';
+import {
+    FT_GQL_GITHUB_PROJECTV2_ITEMS,
+    FT_GQL_GITHUB_PROJECTV2_ITEMS_HISTORICAL,
+} from './implementations/gql/github/projectv2Items.fetcher.js';
 import { FT_REST_GITLAB_COMMITS } from './implementations/rest/gitlab/commits.fetcher.js';
 import { FT_GQL_GITLAB_MERGE_REQUESTS } from './implementations/gql/gitlab/mergeRequests.fetcher.js';
 import { FT_REST_GITLAB_ITEMS } from './implementations/rest/gitlab/items.fetcher.js';
@@ -18,6 +21,7 @@ export const fetchers: Record<string, IFetcher> = {
     FT_GQL_GITHUB_ISSUES,
     FT_GQL_ZENHUB_ISSUES,
     FT_GQL_GITHUB_PROJECTV2_ITEMS,
+    FT_GQL_GITHUB_PROJECTV2_ITEMS_HISTORICAL,
     FT_REST_GITLAB_COMMITS,
     FT_GQL_GITLAB_MERGE_REQUESTS,
     FT_REST_GITLAB_ITEMS,

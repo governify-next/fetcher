@@ -80,124 +80,124 @@ const getProjectItems = async (projectId: string, token: string) => {
     return items;
 };
 
-// const getHistoricalProjectItems = async (projectId: string, token: string) => {
-//     const items = [];
-//     let endCursor = null;
-//     let hasNextPage = true;
+const getHistoricalProjectItems = async (projectId: string, token: string) => {
+    const items = [];
+    let endCursor = null;
+    let hasNextPage = true;
 
-//     while (hasNextPage) {
-//         const query = `
-//           query {
-//             node(id: "${projectId}") {
-//               ... on ProjectV2 {
-//                 items(first: 100, after: ${endCursor ? `"${endCursor}"` : null}) {
-//                   pageInfo {
-//                     hasNextPage
-//                     endCursor
-//                   }
-//                   nodes {
-//                     content {
-//                       __typename
-//                       ... on Issue {
-//                         number
-//                         url
-//                         title
-//                         timelineItems(first: 100, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT, ASSIGNED_EVENT, UNASSIGNED_EVENT, ISSUE_TYPE_ADDED_EVENT, ISSUE_TYPE_CHANGED_EVENT, ISSUE_TYPE_REMOVED_EVENT, CONNECTED_EVENT, DISCONNECTED_EVENT]) {
-//                           nodes {
-//                             __typename
-//                             ... on ProjectV2ItemStatusChangedEvent {
-//                               createdAt
-//                               previousStatus
-//                               status
-//                             }
-//                             ... on AssignedEvent {
-//                               createdAt
-//                               assignee {
-//                                 __typename
-//                                 ... on User {
-//                                   login
-//                                 }
-//                               }
-//                             }
-//                             ... on UnassignedEvent {
-//                               createdAt
-//                               assignee {
-//                                 __typename
-//                                 ... on User {
-//                                   login
-//                                 }
-//                               }
-//                             }
-//                             ... on IssueTypeAddedEvent {
-//                                 createdAt
-//                                 issueType {
-//                                     name
-//                                 }
-//                             }
-//                             ... on IssueTypeRemovedEvent {
-//                                 createdAt
-//                                 issueType {
-//                                     name
-//                                 }
-//                             }
-//                             ... on IssueTypeChangedEvent {
-//                                 createdAt
-//                                 issueType {
-//                                     name
-//                                 }
-//                             }
-//                             ... on ConnectedEvent {
-//                                 createdAt
-//                                 subject {
-//                                     __typename
-//                                     ... on PullRequest {
-//                                         number
-//                                         closedAt
-//                                         mergedAt
-//                                     }
-//                                 }
-//                             }
-//                             ... on DisconnectedEvent {
-//                                 createdAt
-//                                 subject {
-//                                     __typename
-//                                     ... on PullRequest {
-//                                         number
-//                                         closedAt
-//                                         mergedAt
-//                                     }
-//                                 }
-//                             }
-//                           }
-//                         }
-//                       }
-//                     }
-//                   }
-//                 }
-//               }
-//             }
-//           }
-//         `;
+    while (hasNextPage) {
+        const query = `
+          query {
+            node(id: "${projectId}") {
+              ... on ProjectV2 {
+                items(first: 100, after: ${endCursor ? `"${endCursor}"` : null}) {
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                  nodes {
+                    content {
+                      __typename
+                      ... on Issue {
+                        number
+                        url
+                        title
+                        timelineItems(first: 100, itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT, ASSIGNED_EVENT, UNASSIGNED_EVENT, ISSUE_TYPE_ADDED_EVENT, ISSUE_TYPE_CHANGED_EVENT, ISSUE_TYPE_REMOVED_EVENT, CONNECTED_EVENT, DISCONNECTED_EVENT]) {
+                          nodes {
+                            __typename
+                            ... on ProjectV2ItemStatusChangedEvent {
+                              createdAt
+                              previousStatus
+                              status
+                            }
+                            ... on AssignedEvent {
+                              createdAt
+                              assignee {
+                                __typename
+                                ... on User {
+                                  login
+                                }
+                              }
+                            }
+                            ... on UnassignedEvent {
+                              createdAt
+                              assignee {
+                                __typename
+                                ... on User {
+                                  login
+                                }
+                              }
+                            }
+                            ... on IssueTypeAddedEvent {
+                                createdAt
+                                issueType {
+                                    name
+                                }
+                            }
+                            ... on IssueTypeRemovedEvent {
+                                createdAt
+                                issueType {
+                                    name
+                                }
+                            }
+                            ... on IssueTypeChangedEvent {
+                                createdAt
+                                issueType {
+                                    name
+                                }
+                            }
+                            ... on ConnectedEvent {
+                                createdAt
+                                subject {
+                                    __typename
+                                    ... on PullRequest {
+                                        number
+                                        closedAt
+                                        mergedAt
+                                    }
+                                }
+                            }
+                            ... on DisconnectedEvent {
+                                createdAt
+                                subject {
+                                    __typename
+                                    ... on PullRequest {
+                                        number
+                                        closedAt
+                                        mergedAt
+                                    }
+                                }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
 
-//         const data = (await githubGraphQL(query, token)) as {
-//             node: {
-//                 items: {
-//                     nodes: unknown[];
-//                     pageInfo: {
-//                         hasNextPage: boolean;
-//                         endCursor: string | null;
-//                     };
-//                 };
-//             };
-//         };
-//         const page = data.node.items;
-//         items.push(...page.nodes);
-//         hasNextPage = page.pageInfo.hasNextPage;
-//         endCursor = page.pageInfo.endCursor;
-//     }
+        const data = (await githubGraphQL(query, token)) as {
+            node: {
+                items: {
+                    nodes: unknown[];
+                    pageInfo: {
+                        hasNextPage: boolean;
+                        endCursor: string | null;
+                    };
+                };
+            };
+        };
+        const page = data.node.items;
+        items.push(...page.nodes);
+        hasNextPage = page.pageInfo.hasNextPage;
+        endCursor = page.pageInfo.endCursor;
+    }
 
-//     return items;
-// };
+    return items;
+};
 
 export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
     id: 'FT_GQL_GITHUB_PROJECTV2_ITEMS',
@@ -228,31 +228,31 @@ export const FT_GQL_GITHUB_PROJECTV2_ITEMS: IFetcher = {
     },
 };
 
-// export const FT_GQL_GITHUB_PROJECTV2_ITEMS_HISTORICAL: IFetcher = {
-//     id: 'FT_GQL_GITHUB_PROJECTV2_ITEMS_HISTORICAL',
-//     temporalCapability: TemporalCapability.HISTORICAL,
-//     moreInfo: {
-//         title: 'GitHub ProjectV2 Items Fetcher',
-//         description:
-//             'Fetches every item from GitHub ProjectV2 boards associated to the given repository, including basic and historical information with assignees and issue type.',
-//         example: '',
-//     },
-//     fetcherConfigSchema: z.object({
-//         projectIds: z.array(z.string()),
-//         installationId: z.coerce.number().int().positive(),
-//     }),
-//     fetch: async (fetcherConfig) => {
-//         const { projectIds, installationId } = fetcherConfig as {
-//             projectIds: string[];
-//             installationId: number;
-//         };
+export const FT_GQL_GITHUB_PROJECTV2_ITEMS_HISTORICAL: IFetcher = {
+    id: 'FT_GQL_GITHUB_PROJECTV2_ITEMS_HISTORICAL',
+    temporalCapability: TemporalCapability.HISTORICAL,
+    moreInfo: {
+        title: 'GitHub ProjectV2 Items Fetcher',
+        description:
+            'Fetches every item from GitHub ProjectV2 boards associated to the given repository, including basic and historical information with assignees and issue type.',
+        example: '',
+    },
+    fetcherConfigSchema: z.object({
+        projectIds: z.array(z.string()),
+        installationId: z.coerce.number().int().positive(),
+    }),
+    fetch: async (fetcherConfig) => {
+        const { projectIds, installationId } = fetcherConfig as {
+            projectIds: string[];
+            installationId: number;
+        };
 
-//         const token = await getInstallationToken(installationId);
-//         const items = [];
-//         for (const projectId of projectIds) {
-//             const projectItems = await getHistoricalProjectItems(projectId, token);
-//             items.push(...projectItems);
-//         }
-//         return { data: items };
-//     },
-// };
+        const token = await getInstallationToken(installationId);
+        const items = [];
+        for (const projectId of projectIds) {
+            const projectItems = await getHistoricalProjectItems(projectId, token);
+            items.push(...projectItems);
+        }
+        return { data: items };
+    },
+};
